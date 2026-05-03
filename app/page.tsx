@@ -1,4 +1,5 @@
 import Nav from '@/components/Nav'
+import AgentLive from '@/components/AgentLive'
 
 const MOCK_TOURNAMENT = [
   { round: 47, ai: '+12.4%', human: '+8.1%', winner: 'AI' },
@@ -95,27 +96,7 @@ export default function Home() {
             <p className="text-sm text-[var(--fg-muted)] mt-1">The latest on-chain decision, with reasoning. No black box.</p>
           </div>
 
-          <div className="card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="pulse" />
-              <span className="text-xs text-[var(--fg-muted)]">3 minutes ago</span>
-            </div>
-
-            <p className="text-base leading-relaxed mb-4">
-              Increased <span className="text-[var(--accent)]">mETH allocation from 40% to 55%</span>.
-              Mantle staking yield is now <span className="mono">4.2%</span> APR, while USDY T-bill yield dropped to{' '}
-              <span className="mono">3.8%</span>. The 40bps spread justifies rebalancing despite{' '}
-              <span className="mono">~$0.18</span> in gas costs.
-            </p>
-
-            <div className="flex items-center gap-3 text-xs text-[var(--fg-muted)]">
-              <span>Confidence: <span className="text-white mono">87%</span></span>
-              <span>•</span>
-              <span>Tx: <a href="#" className="mono text-[var(--accent)] hover:underline">0xab12...cd34</a></span>
-              <span>•</span>
-              <span>Block <span className="mono">87234012</span></span>
-            </div>
-          </div>
+          <AgentLive />
         </section>
 
         {/* Why Mantle */}
