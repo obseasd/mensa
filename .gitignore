@@ -46,3 +46,5 @@ contracts/out/
 contracts/lib/
 contracts/broadcast/
 contracts/foundry.lock
+
+.vercel

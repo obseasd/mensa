@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import WalletButton from './WalletButton'
 
 export default function Nav() {
   const pathname = usePathname()
@@ -36,9 +37,9 @@ export default function Nav() {
               {label}
             </Link>
           ))}
-          <button className="btn-secondary ml-3 text-xs py-1.5 px-3">
-            Connect Wallet
-          </button>
+          <div className="ml-3">
+            <WalletButton />
+          </div>
         </div>
       </div>
     </nav>
