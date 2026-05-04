@@ -24,11 +24,11 @@ export const MANTLE_SEPOLIA = {
   explorer: 'https://explorer.sepolia.mantle.xyz',
   faucet: 'https://faucet.sepolia.mantle.xyz',
   contracts: {
-    mETH: '0x1d03f395bCC1E5bd0e516bE2C1Aa28950910DDC5',
-    USDY: '0x3338d2791e1cab22835a3975b1401C0f16C2AcCa',
-    mensaAgent: '0x022F2E3EeAC339E4bE51A8a5193779477eB7B7C2',
-    decisionLog: '0x01952C203cA2deBC37753322EB098D3E6546b8b8',
-    tournamentVault: '0x217dC1a541e72B2dcE8EF921885123DD5F6AbA5D',
+    mETH: '0xddf4F73b5943A1Ed07bB78D5D35046905FfC4e81',
+    USDY: '0x72B3096D611C31EdF35865D52D46140B2aEE19ab',
+    mensaAgent: '0x5dffa3622eAF1945B2A61EF53d342C1C82a4c09c',
+    decisionLog: '0x129C036741292750C20F776e04c717c6cE03FBA1',
+    tournamentVault: '0x60353cf0062E02348D94c9ce25B5951bD64b2596',
   },
 } as const
 

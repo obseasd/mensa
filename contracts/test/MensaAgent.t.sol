@@ -30,7 +30,7 @@ contract MensaAgentTest is Test {
 
         agent = new MensaAgent(address(mETH), address(USDY), aiOp);
         decisionLog = new DecisionLog(address(agent));
-        vault = new TournamentVault(address(agent), address(mETH), address(USDY));
+        vault = new TournamentVault(address(agent), address(mETH), address(USDY), aiOp, 1 days);
 
         agent.setDecisionLog(address(decisionLog));
         agent.setTournamentVault(address(vault));

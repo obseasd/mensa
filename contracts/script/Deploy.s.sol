@@ -53,8 +53,11 @@ contract Deploy is Script {
         DecisionLog log = new DecisionLog(address(agent));
         console.log("DecisionLog:    ", address(log));
 
-        // 3. Tournament vault
-        TournamentVault vault = new TournamentVault(address(agent), mETH, USDY);
+        // 3. Tournament vault — pass deployer (EOA) as settler so we can settle from off-chain agent loop
+        // 0-second roundDuration on testnet so we can settle immediately for demo
+        // Mainnet would use 1 days
+        uint256 roundDuration = isMainnet ? 1 days : 0;
+        TournamentVault vault = new TournamentVault(address(agent), mETH, USDY, deployer, roundDuration);
         console.log("TournamentVault:", address(vault));
 
         // 4. Wire them up

@@ -32,11 +32,11 @@ contract TournamentVault is ReentrancyGuard {
     }
 
     address public immutable agent;
-    address public settler;        // Address allowed to settle rounds (initially same as agent's AI operator)
+    address public settler;        // Address allowed to settle rounds (initially set in constructor)
     address public immutable mETH;
     address public immutable USDY;
 
-    uint256 public roundDuration = 1 days;
+    uint256 public roundDuration;
     uint256 public totalRounds;
     uint256 public aiWins;
     uint256 public humanWins;
@@ -68,11 +68,12 @@ contract TournamentVault is ReentrancyGuard {
         _;
     }
 
-    constructor(address _agent, address _mETH, address _USDY) {
+    constructor(address _agent, address _mETH, address _USDY, address _settler, uint256 _roundDuration) {
         agent = _agent;
-        settler = _agent;
+        settler = _settler == address(0) ? _agent : _settler;
         mETH = _mETH;
         USDY = _USDY;
+        roundDuration = _roundDuration;
     }
 
     function setSettler(address _settler) external onlyAgent {
