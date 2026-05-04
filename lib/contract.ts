@@ -14,6 +14,31 @@ const TOURNAMENT_ABI = [
   'function humanWins() view returns (uint256)',
   'function aiWinRateBps() view returns (uint256)',
   'function rounds(uint256) view returns (uint256 id, uint64 startTime, uint64 settlementTime, uint256 startMethPrice, uint256 startUsdyPrice, uint256 settleMethPrice, uint256 settleUsdyPrice, uint8 aiAllocMeth, uint8 humanAllocMeth, int256 aiReturnBps, int256 humanReturnBps, uint8 outcome, bool settled)',
+  'function getVotersCount(uint256) view returns (uint256)',
+  'event HumanVote(uint256 indexed id, address indexed human, uint8 allocMeth, uint256 weight)',
+]
+
+const REPUTATION_ABI = [
+  'function score(address) view returns (uint256)',
+  'function getWeight(address) view returns (uint256)',
+  'function correctVotes(address) view returns (uint256)',
+  'function totalVotes(address) view returns (uint256)',
+  'function winRate(address) view returns (uint256)',
+  'function hasParticipated(address) view returns (bool)',
+  'function firstParticipation(address) view returns (uint64)',
+  'event ReputationUpdated(address indexed user, uint256 newScore, bool won, int256 outperformanceBps)',
+]
+
+const BOUNTY_ABI = [
+  'function claimable(address) view returns (uint256)',
+  'function totalCollected() view returns (uint256)',
+  'function totalDistributed() view returns (uint256)',
+  'function winnerPoolBalance() view returns (uint256)',
+]
+
+const BADGES_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function hasBadge(address, uint8) view returns (bool)',
 ]
 
 const MENSA_AGENT_ABI = [
@@ -133,6 +158,98 @@ export async function getDecisionsWithReasoning(limit = 20): Promise<Array<OnCha
       block: e.blockNumber,
     }
   })
+}
+
+export interface UserProfile {
+  address: string
+  reputation: number
+  weight: number
+  totalVotes: number
+  correctVotes: number
+  winRatePct: number
+  hasParticipated: boolean
+  firstParticipation: number
+  badgeCount: number
+  badges: boolean[]  // 7 badge types
+  claimableBounty: bigint
+}
+
+export async function getUserProfile(address: string): Promise<UserProfile> {
+  const provider = getProvider()
+  const c: any = ACTIVE_CHAIN.contracts
+  const rep = new ethers.Contract(c.reputation, REPUTATION_ABI, provider)
+  const bounty = new ethers.Contract(c.bountyPool, BOUNTY_ABI, provider)
+  const badges = new ethers.Contract(c.badges, BADGES_ABI, provider)
+
+  const [reputation, weight, totalVotes, correctVotes, winRate, hasPart, firstPart, badgeCount, claimable] = await Promise.all([
+    rep.score(address),
+    rep.getWeight(address),
+    rep.totalVotes(address),
+    rep.correctVotes(address),
+    rep.winRate(address),
+    rep.hasParticipated(address),
+    rep.firstParticipation(address),
+    badges.balanceOf(address),
+    bounty.claimable(address),
+  ])
+
+  // Check each badge type (7 types)
+  const badgesOwned = await Promise.all(
+    Array.from({ length: 7 }, (_, i) => badges.hasBadge(address, i))
+  )
+
+  return {
+    address,
+    reputation: Number(reputation),
+    weight: Number(weight),
+    totalVotes: Number(totalVotes),
+    correctVotes: Number(correctVotes),
+    winRatePct: Number(winRate),
+    hasParticipated: hasPart,
+    firstParticipation: Number(firstPart),
+    badgeCount: Number(badgeCount),
+    badges: badgesOwned,
+    claimableBounty: claimable,
+  }
+}
+
+/// Aggregate all unique voters from past rounds for the leaderboard
+export async function getLeaderboard(limit = 100): Promise<UserProfile[]> {
+  const provider = getProvider()
+  const c: any = ACTIVE_CHAIN.contracts
+  const tournament = new ethers.Contract(c.tournamentVault, TOURNAMENT_ABI, provider)
+
+  // Pull all HumanVote events
+  const filter = tournament.filters.HumanVote()
+  const events = await tournament.queryFilter(filter, -50000, 'latest')
+  const voterSet = new Set<string>()
+  for (const e of events) {
+    if ('args' in e && e.args) {
+      voterSet.add((e.args[1] as string).toLowerCase())
+    }
+  }
+
+  const profiles = await Promise.all(
+    Array.from(voterSet).slice(0, limit).map(addr => getUserProfile(addr))
+  )
+
+  return profiles.sort((a, b) => b.reputation - a.reputation)
+}
+
+export async function getBountyStats() {
+  const provider = getProvider()
+  const c: any = ACTIVE_CHAIN.contracts
+  const bounty = new ethers.Contract(c.bountyPool, BOUNTY_ABI, provider)
+  const [collected, distributed, winnerPool] = await Promise.all([
+    bounty.totalCollected(),
+    bounty.totalDistributed(),
+    bounty.winnerPoolBalance(),
+  ])
+  return {
+    totalCollected: collected.toString(),
+    totalDistributed: distributed.toString(),
+    winnerPoolBalance: winnerPool.toString(),
+  }
 }
 
 export async function getRecentRounds(limit = 10): Promise<OnChainRound[]> {
