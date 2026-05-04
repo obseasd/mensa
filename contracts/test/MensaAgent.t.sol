@@ -115,7 +115,11 @@ contract MensaAgentTest is Test {
 
         vm.prank(user);
         vault.voteHuman(1, 50);
-        assertEq(vault.humanVotes(1, user), 50);
+        (uint8 alloc, uint256 weight, uint256 ts) = vault.votes(1, user);
+        assertEq(alloc, 50);
+        assertGt(ts, 0);
+        // weight is 1 since reputation contract not wired in this test setUp
+        assertEq(weight, 1);
     }
 
     function test_settleRoundAIWins() public {

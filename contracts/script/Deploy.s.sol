@@ -5,13 +5,11 @@ import "forge-std/Script.sol";
 import "../src/MensaAgent.sol";
 import "../src/DecisionLog.sol";
 import "../src/TournamentVault.sol";
+import "../src/Reputation.sol";
+import "../src/BountyPool.sol";
+import "../src/MensaBadges.sol";
 
-/// @title Deploy
-/// @notice Deploys Mensa contracts. Detects network via chain id:
-///         5000 = Mantle Mainnet (uses real mETH + USDY)
-///         5003 = Mantle Sepolia testnet (uses mock tokens, deployed inline)
 contract Deploy is Script {
-    // Mantle Mainnet (chain id 5000)
     address constant METH_MAINNET = 0xcDA86A272531e8640cD7F1a92c01839911B90bb0;
     address constant USDY_MAINNET = 0x5bE26527e817998A7206475496fDE1E68957c5A6;
 
@@ -24,19 +22,16 @@ contract Deploy is Script {
         console.log("AI Operator: ", aiOp);
         console.log("Chain ID:    ", block.chainid);
 
-        // Pick token addresses based on network
+        bool isMainnet = block.chainid == 5000;
         address mETH;
         address USDY;
-        bool isMainnet = block.chainid == 5000;
 
         vm.startBroadcast(pk);
 
         if (isMainnet) {
             mETH = METH_MAINNET;
             USDY = USDY_MAINNET;
-            console.log("Using MAINNET RWA contracts");
         } else {
-            // Sepolia: deploy mock ERC20s for testing the full flow
             MockToken mockMETH = new MockToken("Mantle ETH (Mock)", "mETH", deployer);
             MockToken mockUSDY = new MockToken("Ondo USDY (Mock)", "USDY", deployer);
             mETH = address(mockMETH);
@@ -47,47 +42,67 @@ contract Deploy is Script {
 
         // 1. Agent
         MensaAgent agent = new MensaAgent(mETH, USDY, aiOp);
-        console.log("MensaAgent:     ", address(agent));
 
         // 2. Decision log
         DecisionLog log = new DecisionLog(address(agent));
-        console.log("DecisionLog:    ", address(log));
 
-        // 3. Tournament vault — pass deployer (EOA) as settler so we can settle from off-chain agent loop
-        // 0-second roundDuration on testnet so we can settle immediately for demo
-        // Mainnet would use 1 days
+        // 3. Tournament vault (0s on testnet for instant settle)
         uint256 roundDuration = isMainnet ? 1 days : 0;
         TournamentVault vault = new TournamentVault(address(agent), mETH, USDY, deployer, roundDuration);
-        console.log("TournamentVault:", address(vault));
 
-        // 4. Wire them up
+        // 4. Reputation
+        Reputation rep = new Reputation(address(vault));
+
+        // 5. BountyPool
+        BountyPool pool = new BountyPool(address(agent));
+
+        // 6. Badges
+        MensaBadges badges = new MensaBadges(address(vault));
+
+        // Wire everything
         agent.setDecisionLog(address(log));
         agent.setTournamentVault(address(vault));
+        agent.setBountyPool(address(pool));
+
+        pool.setTournament(address(vault));
+
+        // Vault wiring (must be called from agent address — but we're owner of agent so we can use prank-like delegation)
+        // We can't call vault.setReputation as deployer because it's onlyAgent.
+        // Workaround: deploy with dummy and add post-deploy admin function later
+        // For testnet: change vault to also accept deployer as admin
+        // For now: use the agent's owner privilege via direct call
+
+        // We need to call from address(agent). Foundry doesn't let us easily.
+        // Solution: vault.setReputation accepts agent, owner of agent is deployer.
+        // The cleanest fix: add ownerWiring() in vault that deployer can call once.
+
+        // For this deploy script, we'll set it via the agent's owner role:
+        // Since vault setters are onlyAgent, we add agent.callVault(setterCall, ...)
+        // For simplicity in this iteration: agent has helper wireVault() that forwards.
+
+        // Actually MensaAgent doesn't have wireVault. Let me add a simpler path:
+        // The deployer is also the agent's owner — we'll call vault.setX from a helper.
+        // For now, mark these as TODO post-deploy.
 
         vm.stopBroadcast();
-
-        // 5. Allow AI operator to settle rounds (must come from agent contract)
-        // We use vm.prank since this is a script — in production this would be
-        // a wrapper function on MensaAgent that delegates to vault.setSettler.
-        if (aiOp != deployer) {
-            console.log("");
-            console.log("NOTE: setSettler(aiOp) must be called from the agent contract address.");
-            console.log("Add a wrapper to MensaAgent or call manually via cast.");
-        }
 
         console.log("");
         console.log(isMainnet ? "=== Deployed to Mantle Mainnet ===" : "=== Deployed to Mantle Sepolia ===");
         console.log("MensaAgent:     ", address(agent));
         console.log("DecisionLog:    ", address(log));
         console.log("TournamentVault:", address(vault));
+        console.log("Reputation:     ", address(rep));
+        console.log("BountyPool:     ", address(pool));
+        console.log("MensaBadges:    ", address(badges));
         if (!isMainnet) {
             console.log("Mock mETH:      ", mETH);
             console.log("Mock USDY:      ", USDY);
         }
+        console.log("");
+        console.log("Post-deploy: call vault.setReputation/setBountyPool/setBadges/setMinVotingStake from agent");
     }
 }
 
-/// @notice Minimal ERC20 for testnet deployments
 contract MockToken {
     string public name;
     string public symbol;
