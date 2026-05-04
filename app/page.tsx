@@ -1,5 +1,6 @@
 import Nav from '@/components/Nav'
 import AgentLive from '@/components/AgentLive'
+import OnChainStats from '@/components/OnChainStats'
 
 const MOCK_TOURNAMENT = [
   { round: 47, ai: '+12.4%', human: '+8.1%', winner: 'AI' },
@@ -7,13 +8,6 @@ const MOCK_TOURNAMENT = [
   { round: 45, ai: '+15.7%', human: '+15.2%', winner: 'AI' },
   { round: 44, ai: '+3.1%', human: '+4.4%', winner: 'Human' },
   { round: 43, ai: '+22.0%', human: '+11.5%', winner: 'AI' },
-]
-
-const STATS = [
-  { label: 'AI Win Rate', value: '63%', detail: '47 rounds' },
-  { label: 'Avg AI Return', value: '+8.4%', detail: '30-day rolling' },
-  { label: 'Total TVL', value: '$0', detail: 'Live on Mantle' },
-  { label: 'Decisions Logged', value: '0', detail: 'on-chain' },
 ]
 
 export default function Home() {
@@ -45,16 +39,8 @@ export default function Home() {
             <button className="btn-secondary">Watch the Tournament</button>
           </div>
 
-          {/* Quick stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {STATS.map(({ label, value, detail }) => (
-              <div key={label} className="card p-4">
-                <div className="text-2xl font-medium tracking-tight mono">{value}</div>
-                <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">{label}</div>
-                <div className="text-[10px] text-[var(--fg-dim)] mt-1">{detail}</div>
-              </div>
-            ))}
-          </div>
+          {/* Live on-chain stats */}
+          <OnChainStats />
         </div>
 
         {/* Tournament Feed */}
