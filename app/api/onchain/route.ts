@@ -17,6 +17,8 @@ export async function GET() {
       metaParam2: d.metaParam2.toString(),
     })), rounds: rounds.map(r => ({
       ...r,
+      startMethPrice: r.startMethPrice.toString(),
+      startUsdyPrice: r.startUsdyPrice.toString(),
       aiReturnBps: r.aiReturnBps.toString(),
       humanReturnBps: r.humanReturnBps.toString(),
     })) })

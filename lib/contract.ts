@@ -36,6 +36,8 @@ export interface OnChainRound {
   id: number
   startTime: number
   settlementTime: number
+  startMethPrice: bigint
+  startUsdyPrice: bigint
   aiAllocMeth: number
   humanAllocMeth: number
   aiReturnBps: bigint
@@ -147,6 +149,8 @@ export async function getRecentRounds(limit = 10): Promise<OnChainRound[]> {
         id: Number(r.id),
         startTime: Number(r.startTime),
         settlementTime: Number(r.settlementTime),
+        startMethPrice: r.startMethPrice,
+        startUsdyPrice: r.startUsdyPrice,
         aiAllocMeth: Number(r.aiAllocMeth),
         humanAllocMeth: Number(r.humanAllocMeth),
         aiReturnBps: r.aiReturnBps,

@@ -5,7 +5,7 @@
 import { ethers } from 'ethers'
 
 const RPC = 'https://rpc.sepolia.mantle.xyz'
-const AGENT_ADDR = '0x5dffa3622eAF1945B2A61EF53d342C1C82a4c09c'
+const AGENT_ADDR = '0x0B1018150C18dF5EB453Baa25a169884069AA81F'
 
 const AGENT_ABI = [
   'function executeAllocation(uint8 newMethAllocPct, uint8 confidence, string reasoning, uint256 methPrice, uint256 usdyPrice) returns (uint256, uint256)',

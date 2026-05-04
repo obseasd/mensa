@@ -156,5 +156,15 @@ contract MensaAgent is Ownable, ReentrancyGuard {
         performanceFeeBps = _bps;
     }
 
+    /// @notice Helper for owner to wire vault subcomponents (since vault setters are onlyAgent)
+    function wireVault(address _reputation, address _pool, address _badges, uint256 _minStake) external onlyOwner {
+        require(address(tournamentVault) != address(0), "vault not set");
+        (bool ok1,) = address(tournamentVault).call(abi.encodeWithSignature("setReputation(address)", _reputation));
+        (bool ok2,) = address(tournamentVault).call(abi.encodeWithSignature("setBountyPool(address)", _pool));
+        (bool ok3,) = address(tournamentVault).call(abi.encodeWithSignature("setBadges(address)", _badges));
+        (bool ok4,) = address(tournamentVault).call(abi.encodeWithSignature("setMinVotingStake(uint256)", _minStake));
+        require(ok1 && ok2 && ok3 && ok4, "wiring failed");
+    }
+
     receive() external payable {}
 }

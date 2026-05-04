@@ -24,11 +24,14 @@ export const MANTLE_SEPOLIA = {
   explorer: 'https://explorer.sepolia.mantle.xyz',
   faucet: 'https://faucet.sepolia.mantle.xyz',
   contracts: {
-    mETH: '0xddf4F73b5943A1Ed07bB78D5D35046905FfC4e81',
-    USDY: '0x72B3096D611C31EdF35865D52D46140B2aEE19ab',
-    mensaAgent: '0x5dffa3622eAF1945B2A61EF53d342C1C82a4c09c',
-    decisionLog: '0x129C036741292750C20F776e04c717c6cE03FBA1',
-    tournamentVault: '0x60353cf0062E02348D94c9ce25B5951bD64b2596',
+    mETH: '0x66174C1BFe93a8c3FD5820148a664df52Ca4d170',
+    USDY: '0xe73A1eeC53BE30c7AA1e57953216aebBFC0bb120',
+    mensaAgent: '0x0B1018150C18dF5EB453Baa25a169884069AA81F',
+    decisionLog: '0x32f6911E8bb653d9B4210748972F8EbF3651ef85',
+    tournamentVault: '0xE0C0088acaD843e07Ceb77338fF1eC49979Be5f2',
+    reputation: '0xb431a54b5801c5278D64ED38e1a7b31585560992',
+    bountyPool: '0x597ef1750d0d83d8764dB5B62be0F1f1F13f9313',
+    badges: '0x94831c84f00c1F6D9331318fD94e0C77243cb5EE',
   },
 } as const
 

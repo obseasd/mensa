@@ -5,7 +5,7 @@
 import { ethers } from 'ethers'
 
 const RPC = 'https://rpc.sepolia.mantle.xyz'
-const VAULT_ADDR = '0x60353cf0062E02348D94c9ce25B5951bD64b2596'
+const VAULT_ADDR = '0xE0C0088acaD843e07Ceb77338fF1eC49979Be5f2'
 
 const VAULT_ABI = [
   'function totalRounds() view returns (uint256)',

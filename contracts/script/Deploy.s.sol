@@ -66,23 +66,10 @@ contract Deploy is Script {
 
         pool.setTournament(address(vault));
 
-        // Vault wiring (must be called from agent address — but we're owner of agent so we can use prank-like delegation)
-        // We can't call vault.setReputation as deployer because it's onlyAgent.
-        // Workaround: deploy with dummy and add post-deploy admin function later
-        // For testnet: change vault to also accept deployer as admin
-        // For now: use the agent's owner privilege via direct call
-
-        // We need to call from address(agent). Foundry doesn't let us easily.
-        // Solution: vault.setReputation accepts agent, owner of agent is deployer.
-        // The cleanest fix: add ownerWiring() in vault that deployer can call once.
-
-        // For this deploy script, we'll set it via the agent's owner role:
-        // Since vault setters are onlyAgent, we add agent.callVault(setterCall, ...)
-        // For simplicity in this iteration: agent has helper wireVault() that forwards.
-
-        // Actually MensaAgent doesn't have wireVault. Let me add a simpler path:
-        // The deployer is also the agent's owner — we'll call vault.setX from a helper.
-        // For now, mark these as TODO post-deploy.
+        // Wire vault subcomponents via agent's helper (since vault setters are onlyAgent)
+        // minVotingStake = 0 on testnet, 10 ether equivalent on mainnet
+        uint256 minStake = isMainnet ? 10 ether : 0;
+        agent.wireVault(address(rep), address(pool), address(badges), minStake);
 
         vm.stopBroadcast();
 

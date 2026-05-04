@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import VoteRound from './VoteRound'
 
 interface Round {
   id: number
@@ -12,6 +13,8 @@ interface Round {
   humanReturnBps: string
   outcome: number
   settled: boolean
+  startMethPrice?: string
+  startUsdyPrice?: string
 }
 
 interface Stats {
@@ -79,6 +82,35 @@ export default function TournamentList() {
           </div>
         </div>
       )}
+
+      {/* Pending rounds — vote UI */}
+      {(() => {
+        const pending = rounds.filter(r => !r.settled)
+        if (pending.length === 0) return null
+        return (
+          <div>
+            <h2 className="text-sm uppercase tracking-wider text-[var(--fg-muted)] mb-3">
+              Pending — vote against the AI
+            </h2>
+            <div className="grid gap-3">
+              {pending.map((r) => (
+                <div key={r.id} className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-[var(--fg-muted)] px-1">
+                    <span className="mono">Round #{r.id}</span>
+                    <span>AI bet {r.aiAllocMeth}% mETH</span>
+                  </div>
+                  <VoteRound
+                    roundId={r.id}
+                    aiAllocMeth={r.aiAllocMeth}
+                    startMethPrice={r.startMethPrice ?? '0'}
+                    startUsdyPrice={r.startUsdyPrice ?? '0'}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Rounds table */}
       {loading ? (
