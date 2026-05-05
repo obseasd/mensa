@@ -162,16 +162,36 @@ export async function getRecentDecisions(limit = 10): Promise<OnChainDecision[]>
   return results
 }
 
-/// Get full reasoning text from past DecisionRecorded events
+/// Get full reasoning text from past DecisionRecorded events.
+/// Walks backward in chunks of ~9000 blocks (under typical RPC getLogs limits)
+/// until we have `limit` events or we hit MAX_LOOKBACK_BLOCKS.
 export async function getDecisionsWithReasoning(limit = 20): Promise<Array<OnChainDecision & { reasoning: string; txHash: string; block: number }>> {
   const provider = getProvider()
   const log = new ethers.Contract(ACTIVE_CHAIN.contracts.decisionLog, DECISION_LOG_ABI, provider)
-
   const filter = log.filters.DecisionRecorded()
-  const events = await log.queryFilter(filter, -10000, 'latest')
-  const recent = events.slice(-limit).reverse()
 
-  return recent.map((e) => {
+  const CHUNK = 9000
+  const MAX_LOOKBACK_BLOCKS = 30 * 24 * 60 * 30 // ~30d at 2s blocks (Mantle)
+  const head = await provider.getBlockNumber()
+  const collected: Array<ethers.Log | ethers.EventLog> = []
+
+  let to = head
+  while (to > 0 && (head - to) < MAX_LOOKBACK_BLOCKS && collected.length < limit) {
+    const from = Math.max(0, to - CHUNK + 1)
+    try {
+      const batch = await log.queryFilter(filter, from, to)
+      // Newest first within batch
+      for (let i = batch.length - 1; i >= 0; i--) {
+        collected.push(batch[i])
+        if (collected.length >= limit) break
+      }
+    } catch {
+      // skip chunk on RPC error and keep walking back
+    }
+    to = from - 1
+  }
+
+  return collected.map((e) => {
     if (!('args' in e)) {
       throw new Error('Expected event log with args')
     }
