@@ -22,7 +22,6 @@ export default function Nav() {
             { href: '/tournament', label: 'Tournament' },
             { href: '/deposit', label: 'Deposit' },
             { href: '/leaderboard', label: 'Leaderboard' },
-            { href: '/decisions', label: 'Decisions' },
             { href: '/docs', label: 'Docs' },
           ].map(({ href, label }) => (
             <Link
