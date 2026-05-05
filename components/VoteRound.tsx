@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 import { mantleSepolia } from '@/lib/wagmi'
@@ -22,16 +22,38 @@ interface VoteRoundProps {
   startUsdyPrice: bigint | string
 }
 
+interface SimResult {
+  ai: { totalReturnPct: number; methAPY: number; usdyAPY: number }
+  human: { totalReturnPct: number }
+  aiOutperformBps: number
+  winner: 'AI' | 'Human' | 'Tie'
+}
+
 export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
   const { isConnected } = useAccount()
   const chainId = useChainId()
   const [allocation, setAllocation] = useState(aiAllocMeth)
   const [submitted, setSubmitted] = useState(false)
+  const [sim, setSim] = useState<SimResult | null>(null)
+  const [simLoading, setSimLoading] = useState(false)
 
   const { writeContract, isPending, data: txHash } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
   const isMantle = chainId === mantleSepolia.id
+
+  // Live simulation when allocation changes
+  useEffect(() => {
+    setSimLoading(true)
+    const t = setTimeout(() => {
+      fetch(`/api/simulate?ai=${aiAllocMeth}&human=${allocation}&days=1`)
+        .then(r => r.json())
+        .then(d => { if (!d.error) setSim(d) })
+        .catch(() => {})
+        .finally(() => setSimLoading(false))
+    }, 200)
+    return () => clearTimeout(t)
+  }, [allocation, aiAllocMeth])
 
   const handleVote = () => {
     writeContract({
@@ -47,7 +69,7 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
 
   if (isSuccess) {
     return (
-      <div className="card p-5 border-[var(--accent)]" style={{ borderColor: 'var(--accent)' }}>
+      <div className="card p-5" style={{ borderColor: 'var(--accent)' }}>
         <div className="flex items-center gap-2 mb-2">
           <span className="pulse" />
           <span className="text-xs text-[var(--accent)]">Vote submitted</span>
@@ -80,6 +102,8 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
       </div>
     )
   }
+
+  const winColor = sim?.winner === 'Human' ? 'var(--accent)' : sim?.winner === 'AI' ? '#f87171' : '#a0a0a0'
 
   return (
     <div className="card p-5">
@@ -115,6 +139,50 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
         </div>
       </div>
 
+      {/* Live simulation */}
+      <div className="mb-4 p-3 rounded-md" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
+            Simulation {simLoading && <span className="text-[var(--fg-dim)]">…</span>}
+          </span>
+          {sim && (
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded"
+              style={{
+                color: winColor,
+                background: `${winColor}15`,
+              }}
+            >
+              {sim.winner === 'Tie' ? 'TIE' : sim.winner === 'Human' ? 'YOU WIN' : 'AI WINS'}
+            </span>
+          )}
+        </div>
+
+        {sim ? (
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <div className="text-[10px] text-[var(--fg-muted)]">AI return (1d)</div>
+              <div className="mono mt-0.5">+{sim.ai.totalReturnPct.toFixed(4)}%</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-[var(--fg-muted)]">Your return (1d)</div>
+              <div className="mono mt-0.5" style={{ color: sim.aiOutperformBps < 0 ? 'var(--accent)' : 'var(--fg)' }}>
+                +{sim.human.totalReturnPct.toFixed(4)}%
+              </div>
+            </div>
+            <div className="col-span-2 pt-2 border-t border-[var(--border)] text-[10px] text-[var(--fg-muted)]">
+              Outperformance: <span className="mono" style={{ color: winColor }}>{sim.aiOutperformBps > 0 ? '-' : '+'}{Math.abs(sim.aiOutperformBps)} bps</span>
+              <span className="mx-2">·</span>
+              mETH APY <span className="mono">{sim.ai.methAPY.toFixed(2)}%</span>
+              <span className="mx-2">·</span>
+              USDY APY <span className="mono">{sim.ai.usdyAPY.toFixed(2)}%</span>
+            </div>
+          </div>
+        ) : (
+          <div className="text-[10px] text-[var(--fg-dim)]">Computing...</div>
+        )}
+      </div>
+
       <button
         onClick={handleVote}
         disabled={isPending || isConfirming || submitted}
@@ -126,8 +194,7 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
       </button>
 
       <p className="text-[10px] text-[var(--fg-dim)] mt-3">
-        Voting is permissionless on testnet. Vote weight increases with reputation.
-        Min stake required on mainnet ($10 equivalent).
+        Simulation uses live Mantle APYs from DefiLlama. Real outcome depends on actual prices at settlement.
       </p>
     </div>
   )

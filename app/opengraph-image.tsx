@@ -23,22 +23,13 @@ export default async function Image() {
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '60px' }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              background: '#fff',
-              color: '#000',
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 24,
-              fontWeight: 700,
-            }}
-          >
-            M
-          </div>
+          <img
+            src={`https://mensa-mu.vercel.app/logo.png`}
+            width={44}
+            height={44}
+            style={{ borderRadius: 6 }}
+            alt="M"
+          />
           <div style={{ fontSize: 28, fontWeight: 500 }}>mensa</div>
           <div
             style={{

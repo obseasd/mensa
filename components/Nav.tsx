@@ -12,9 +12,7 @@ export default function Nav() {
     <nav className="relative z-10 border-b border-[var(--border)]">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center text-black font-bold text-sm transition group-hover:opacity-80">
-            M
-          </div>
+          <img src="/logo.png" alt="Mensa" className="w-7 h-7 transition group-hover:opacity-80" />
           <span className="font-medium text-base tracking-tight">mensa</span>
         </Link>
 
