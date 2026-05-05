@@ -80,6 +80,79 @@ function getProvider() {
   return new ethers.JsonRpcProvider(ACTIVE_CHAIN.rpc)
 }
 
+export interface AlphaStats {
+  settledRounds: number
+  cumulativeAiBps: number       // sum of ai returns
+  cumulativeBaselineBps: number // sum of 50/50 returns
+  alphaBps: number              // ai - baseline (cumulative)
+  perRoundAvgAlphaBps: number   // alphaBps / settledRounds
+  annualizedAlphaPct: number    // perRoundAvgAlphaBps * 365 / 100, treating each round as ~24h
+  recent: Array<{
+    id: number
+    aiAllocMeth: number
+    aiReturnBps: number
+    baselineReturnBps: number
+    optimalAllocMeth: number    // 100 if methReturn > usdyReturn else 0
+    optimalReturnBps: number
+  }>
+}
+
+export async function getAlphaStats(limit = 20): Promise<AlphaStats> {
+  const provider = getProvider()
+  const tournament = new ethers.Contract(ACTIVE_CHAIN.contracts.tournamentVault, TOURNAMENT_ABI, provider)
+  const total = Number(await tournament.totalRounds())
+  if (total === 0) {
+    return { settledRounds: 0, cumulativeAiBps: 0, cumulativeBaselineBps: 0, alphaBps: 0, perRoundAvgAlphaBps: 0, annualizedAlphaPct: 0, recent: [] }
+  }
+  const ids = Array.from({ length: Math.min(limit, total) }, (_, i) => total - i)
+  const rounds = await Promise.all(ids.map(id => tournament.rounds(id)))
+
+  let cumAi = 0
+  let cumBase = 0
+  let settled = 0
+  const recent: AlphaStats['recent'] = []
+  for (const r of rounds) {
+    if (!r.settled) continue
+    const startMeth = Number(r.startMethPrice)
+    const settleMeth = Number(r.settleMethPrice)
+    const startUsdy = Number(r.startUsdyPrice)
+    const settleUsdy = Number(r.settleUsdyPrice)
+    if (startMeth === 0 || startUsdy === 0) continue
+    const methRetBps = Math.round(((settleMeth - startMeth) / startMeth) * 10000)
+    const usdyRetBps = Math.round(((settleUsdy - startUsdy) / startUsdy) * 10000)
+    const baselineBps = Math.round((methRetBps + usdyRetBps) / 2)
+    const aiBps = Number(r.aiReturnBps)
+    cumAi += aiBps
+    cumBase += baselineBps
+    settled++
+    const optimalAllocMeth = methRetBps > usdyRetBps ? 100 : 0
+    const optimalReturnBps = optimalAllocMeth === 100 ? methRetBps : usdyRetBps
+    recent.push({
+      id: Number(r.id),
+      aiAllocMeth: Number(r.aiAllocMeth),
+      aiReturnBps: aiBps,
+      baselineReturnBps: baselineBps,
+      optimalAllocMeth,
+      optimalReturnBps,
+    })
+  }
+
+  const alphaBps = cumAi - cumBase
+  const perRoundAvgAlphaBps = settled > 0 ? alphaBps / settled : 0
+  // each round ≈ 24h on mainnet, so annualize by ×365
+  const annualizedAlphaPct = (perRoundAvgAlphaBps * 365) / 100
+
+  return {
+    settledRounds: settled,
+    cumulativeAiBps: cumAi,
+    cumulativeBaselineBps: cumBase,
+    alphaBps,
+    perRoundAvgAlphaBps,
+    annualizedAlphaPct,
+    recent,
+  }
+}
+
 async function fetchEthPriceUsd(): Promise<number> {
   try {
     const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', { next: { revalidate: 60 } })

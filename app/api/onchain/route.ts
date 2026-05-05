@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server'
-import { getProtocolStats, getRecentRounds } from '@/lib/contract'
+import { getProtocolStats, getRecentRounds, getAlphaStats } from '@/lib/contract'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export async function GET() {
   try {
-    const [stats, rounds] = await Promise.all([
+    const [stats, rounds, alpha] = await Promise.all([
       getProtocolStats(),
       getRecentRounds(20),
+      getAlphaStats(20),
     ])
     return NextResponse.json({
-      stats,
+      stats: { ...stats, alpha },
       rounds: rounds.map(r => ({
         ...r,
         startMethPrice: r.startMethPrice.toString(),

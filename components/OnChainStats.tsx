@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from 'react'
 
+interface Alpha {
+  settledRounds: number
+  alphaBps: number
+  perRoundAvgAlphaBps: number
+  annualizedAlphaPct: number
+}
+
 interface Stats {
   totalDecisions: number
   totalRounds: number
@@ -11,6 +18,7 @@ interface Stats {
   currentMethAllocPct: number
   tvlUsd: number
   lastRebalanceAt: number
+  alpha?: Alpha
 }
 
 const STAT_FALLBACK: Stats = {
@@ -37,10 +45,20 @@ export default function OnChainStats() {
       .finally(() => setLoading(false))
   }, [])
 
+  const a = stats.alpha
+  const hasAlpha = !!a && a.settledRounds > 0
+  const alphaSign = hasAlpha && a!.alphaBps >= 0 ? '+' : ''
+  const alphaValue = hasAlpha
+    ? `${alphaSign}${a!.annualizedAlphaPct.toFixed(2)}%`
+    : '—'
+  const alphaDetail = hasAlpha
+    ? `${alphaSign}${(a!.perRoundAvgAlphaBps).toFixed(0)} bps / round · ${a!.settledRounds} settled`
+    : 'building track record'
+
   const items = [
     { label: 'TVL', value: formatTvl(stats.tvlUsd), detail: 'mETH + USDY in agent' },
-    { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—', detail: `${stats.totalRounds} rounds` },
-    { label: 'Decisions Logged', value: stats.totalDecisions.toString(), detail: 'on-chain' },
+    { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L of ${stats.totalRounds} rounds` },
+    { label: 'Alpha vs 50/50', value: alphaValue, detail: alphaDetail },
   ]
 
   return (

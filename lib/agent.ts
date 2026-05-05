@@ -5,6 +5,7 @@
 import { ethers } from 'ethers'
 import Anthropic from '@anthropic-ai/sdk'
 import { MANTLE_MAINNET } from './chains'
+import { getAlphaStats, type AlphaStats } from './contract'
 
 const COINGECKO_PRICE = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
 const LLAMA_POOLS = 'https://yields.llama.fi/pools'
@@ -133,10 +134,46 @@ export async function fetchMarketState(provider?: ethers.JsonRpcProvider): Promi
   }
 }
 
+function formatTrackRecord(alpha: AlphaStats): string {
+  if (alpha.settledRounds === 0) {
+    return `Track record: No settled rounds yet — this is your early-stage decision making. Be measured.`
+  }
+  const sign = alpha.alphaBps >= 0 ? '+' : ''
+  const lines: string[] = []
+  lines.push(`Track record (${alpha.settledRounds} settled rounds):`)
+  lines.push(`  Cumulative alpha vs 50/50 baseline: ${sign}${alpha.alphaBps} bps (${sign}${alpha.annualizedAlphaPct.toFixed(2)}% annualized)`)
+  lines.push(`  Per-round average alpha: ${sign}${alpha.perRoundAvgAlphaBps.toFixed(0)} bps`)
+  if (alpha.recent.length > 0) {
+    lines.push('')
+    lines.push('Recent rounds (newest first) — what you did vs what would have been optimal:')
+    for (const r of alpha.recent.slice(0, 8)) {
+      const youReturn = r.aiReturnBps
+      const baseReturn = r.baselineReturnBps
+      const youVsBase = youReturn - baseReturn
+      const youVsOpt = youReturn - r.optimalReturnBps
+      const yvbSign = youVsBase >= 0 ? '+' : ''
+      const yvoSign = youVsOpt >= 0 ? '' : ''
+      lines.push(`  Round #${r.id}: you=${r.aiAllocMeth}% mETH (${youReturn}bps) | 50/50=${baseReturn}bps | optimal=${r.optimalAllocMeth}% mETH (${r.optimalReturnBps}bps) | you-vs-base=${yvbSign}${youVsBase}bps | you-vs-optimal=${yvoSign}${youVsOpt}bps`)
+    }
+    lines.push('')
+    lines.push('Reflect on these patterns: when did you under-allocate to the winning asset? When did you over-rebalance and lose to a passive 50/50? Use this self-knowledge.')
+  }
+  return lines.join('\n')
+}
+
 export async function decideAllocation(state: MarketState, apiKey?: string): Promise<AgentDecision> {
   const key = apiKey || process.env.ANTHROPIC_API_KEY
   if (!key) {
     return mockDecision(state)
+  }
+
+  // Fetch own track record (best-effort — don't block on failure)
+  let trackRecordText = ''
+  try {
+    const alpha = await getAlphaStats(20)
+    trackRecordText = formatTrackRecord(alpha)
+  } catch {
+    trackRecordText = 'Track record: unavailable (RPC error). Decide on first principles.'
   }
 
   const client = new Anthropic({ apiKey: key })
@@ -156,6 +193,8 @@ Treasury:
   Total TVL: $${state.totalTVL.toFixed(2)}
 
 Spread (mETH APR - USDY APR): ${(state.mETHYieldAPR - state.usdyYieldAPR).toFixed(2)}bps
+
+${trackRecordText}
 
 Make your allocation decision. Respond with JSON only.`
 

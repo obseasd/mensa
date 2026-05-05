@@ -27,6 +27,55 @@ const AGENT_ABI = [
   'function minTimeBetweenRebalances() view returns (uint256)',
 ]
 
+const TOURNAMENT_ADDR = '0x92E6B40da9566d6b7176420D88818500dB77d122'
+const TOURNAMENT_ABI = [
+  'function totalRounds() view returns (uint256)',
+  'function rounds(uint256) view returns (uint256 id, uint64 startTime, uint64 settlementTime, uint256 startMethPrice, uint256 startUsdyPrice, uint256 settleMethPrice, uint256 settleUsdyPrice, uint8 aiAllocMeth, uint8 humanAllocMeth, int256 aiReturnBps, int256 humanReturnBps, uint8 outcome, bool settled)',
+]
+
+async function fetchTrackRecord(provider) {
+  try {
+    const t = new ethers.Contract(TOURNAMENT_ADDR, TOURNAMENT_ABI, provider)
+    const total = Number(await t.totalRounds())
+    if (total === 0) return 'Track record: No settled rounds yet — early-stage decision making. Be measured.'
+    const ids = Array.from({ length: Math.min(20, total) }, (_, i) => total - i)
+    const rounds = await Promise.all(ids.map(id => t.rounds(id)))
+    let cumAi = 0, cumBase = 0, settled = 0
+    const recent = []
+    for (const r of rounds) {
+      if (!r.settled) continue
+      const sm = Number(r.startMethPrice), em = Number(r.settleMethPrice)
+      const su = Number(r.startUsdyPrice), eu = Number(r.settleUsdyPrice)
+      if (sm === 0 || su === 0) continue
+      const methBps = Math.round(((em - sm) / sm) * 10000)
+      const usdyBps = Math.round(((eu - su) / su) * 10000)
+      const baseBps = Math.round((methBps + usdyBps) / 2)
+      const aiBps = Number(r.aiReturnBps)
+      cumAi += aiBps; cumBase += baseBps; settled++
+      const optAlloc = methBps > usdyBps ? 100 : 0
+      const optBps = optAlloc === 100 ? methBps : usdyBps
+      recent.push(`  Round #${Number(r.id)}: you=${Number(r.aiAllocMeth)}% mETH (${aiBps}bps) | 50/50=${baseBps}bps | optimal=${optAlloc}% mETH (${optBps}bps) | you-vs-base=${aiBps - baseBps >= 0 ? '+' : ''}${aiBps - baseBps}bps`)
+    }
+    if (settled === 0) return 'Track record: No settled rounds yet — early-stage decision making. Be measured.'
+    const alphaBps = cumAi - cumBase
+    const perRound = alphaBps / settled
+    const annualizedPct = (perRound * 365) / 100
+    const sign = alphaBps >= 0 ? '+' : ''
+    return [
+      `Track record (${settled} settled rounds):`,
+      `  Cumulative alpha vs 50/50: ${sign}${alphaBps} bps (${sign}${annualizedPct.toFixed(2)}% annualized)`,
+      `  Per-round average: ${sign}${perRound.toFixed(0)} bps`,
+      '',
+      'Recent rounds:',
+      ...recent.slice(0, 8),
+      '',
+      'Reflect: when did you under-allocate to the winning asset? When did you over-rebalance and lose to passive 50/50? Use this self-knowledge.',
+    ].join('\n')
+  } catch (e) {
+    return `Track record: unavailable (${e.message}). Decide on first principles.`
+  }
+}
+
 const SYSTEM_PROMPT = `You are Mensa, an autonomous AI treasury agent on Mantle network.
 Your job is to allocate funds between two yield-bearing assets:
 
@@ -94,7 +143,7 @@ async function fetchMarketState(currentMeth) {
   }
 }
 
-async function decideWithClaude(state, apiKey) {
+async function decideWithClaude(state, apiKey, trackRecord) {
   const client = new Anthropic({ apiKey })
   const userMessage = `Current market state:
 
@@ -111,6 +160,8 @@ Treasury:
   Current mETH allocation: ${state.currentMeth}%
 
 Spread (mETH APR - USDY APR): ${(state.methYieldAPR - state.usdyYieldAPR).toFixed(2)}pp
+
+${trackRecord}
 
 Make your allocation decision. Respond with JSON only.`
 
@@ -169,12 +220,14 @@ async function runOnce(agent) {
   const currentMeth = Number(await agent.currentMethAllocPct())
   const state = await fetchMarketState(currentMeth)
   const apiKey = process.env.ANTHROPIC_API_KEY
+  const trackRecord = await fetchTrackRecord(agent.runner.provider)
+  console.log(`---\n${trackRecord}\n---`)
 
   let decision
   let source
   if (apiKey) {
     try {
-      decision = await decideWithClaude(state, apiKey)
+      decision = await decideWithClaude(state, apiKey, trackRecord)
       source = 'claude'
     } catch (e) {
       console.error(`[${new Date().toISOString()}] Claude failed, using heuristic: ${e.message}`)
