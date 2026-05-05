@@ -10,9 +10,12 @@ export const MANTLE_MAINNET = {
   contracts: {
     mETH: '0xcDA86A272531e8640cD7F1a92c01839911B90bb0',
     USDY: '0x5bE26527e817998A7206475496fDE1E68957c5A6',
-    mensaAgent: '',
-    decisionLog: '',
-    tournamentVault: '',
+    mensaAgent: '0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49',
+    decisionLog: '0xD889B7819eF45cda7b9D30bA677A27E0ef6788Fe',
+    tournamentVault: '0x92E6B40da9566d6b7176420D88818500dB77d122',
+    reputation: '0x10A519fd1867120C5379C7f8016A4223826b4E5f',
+    bountyPool: '0x06460f1cb540951e115A95257D59FEeFf9A55f39',
+    badges: '0x22867d39E3e9891A4F76754AF9BD1B131661144E',
   },
 } as const
 

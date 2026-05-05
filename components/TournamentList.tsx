@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import VoteRound from './VoteRound'
+import SettleButton from './SettleButton'
 
 interface Round {
   id: number
@@ -102,6 +103,11 @@ export default function TournamentList() {
                   <VoteRound
                     roundId={r.id}
                     aiAllocMeth={r.aiAllocMeth}
+                    startMethPrice={r.startMethPrice ?? '0'}
+                    startUsdyPrice={r.startUsdyPrice ?? '0'}
+                  />
+                  <SettleButton
+                    roundId={r.id}
                     startMethPrice={r.startMethPrice ?? '0'}
                     startUsdyPrice={r.startUsdyPrice ?? '0'}
                   />

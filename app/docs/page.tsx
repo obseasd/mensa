@@ -1,4 +1,5 @@
 import Nav from '@/components/Nav'
+import ArchitectureDiagram from '@/components/ArchitectureDiagram'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 
 const CONTRACTS = [
@@ -63,33 +64,7 @@ export default function DocsPage() {
         {/* Architecture diagram */}
         <section className="mb-12">
           <h2 className="text-lg font-medium mb-4">Flow</h2>
-          <div className="card p-6 mono text-xs text-[var(--fg-muted)] leading-loose overflow-x-auto whitespace-pre">
-{`User wallet (mETH / USDY)
-        |
-        v
-+------------------+      +-----------------------+
-|   MensaAgent     |<---->|   TournamentVault     |
-|   (treasury)     |      |   (AI vs Human)       |
-+--------+---------+      +-----------------------+
-         |                            ^
-         v                            |
-+------------------+   Humans vote on allocations
-|   DecisionLog    |   AI logs its decisions
-|   (reasoning)    |
-+--------+---------+
-         ^
-         | executeAllocation(target%, reasoning)
-         |
-+----------------------------+
-|  AI Agent Loop (off-chain) |
-|  - Reads mETH / USDY APRs  |
-|  - Reads Bybit signals     |
-|  - Asks Claude Haiku 4.5   |
-|  - Submits target alloc    |
-+----------------------------+
-
-   All on Mantle (Chain ID ${ACTIVE_CHAIN.id})`}
-          </div>
+          <ArchitectureDiagram />
         </section>
 
         {/* Contracts */}
