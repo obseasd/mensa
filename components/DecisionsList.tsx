@@ -39,7 +39,7 @@ export default function DecisionsList() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/onchain')
+    fetch('/api/decisions')
       .then(r => r.json())
       .then(data => { if (data.decisions) setDecisions(data.decisions) })
       .catch(console.error)

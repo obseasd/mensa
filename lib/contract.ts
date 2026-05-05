@@ -170,8 +170,8 @@ export async function getDecisionsWithReasoning(limit = 20): Promise<Array<OnCha
   const log = new ethers.Contract(ACTIVE_CHAIN.contracts.decisionLog, DECISION_LOG_ABI, provider)
   const filter = log.filters.DecisionRecorded()
 
-  const CHUNK = 9000
-  const MAX_LOOKBACK_BLOCKS = 30 * 24 * 60 * 30 // ~30d at 2s blocks (Mantle)
+  const CHUNK = 50000 // Mantle public RPC accepts up to 50k blocks per query
+  const MAX_LOOKBACK_BLOCKS = 600000 // ~14d at 2s blocks (Mantle); plenty for hackathon demo
   const head = await provider.getBlockNumber()
   const collected: Array<ethers.Log | ethers.EventLog> = []
 

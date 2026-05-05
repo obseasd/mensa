@@ -41,7 +41,7 @@ export default function DecisionsModal({ open, onClose }: { open: boolean; onClo
   useEffect(() => {
     if (!open) return
     setLoading(true)
-    fetch('/api/onchain')
+    fetch('/api/decisions')
       .then(r => r.json())
       .then(d => { if (d.decisions) setDecisions(d.decisions) })
       .catch(console.error)
