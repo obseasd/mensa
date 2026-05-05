@@ -6,6 +6,9 @@ import { ethers } from 'ethers'
 import Anthropic from '@anthropic-ai/sdk'
 import { MANTLE_MAINNET } from './chains'
 
+const COINGECKO_PRICE = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+const LLAMA_POOLS = 'https://yields.llama.fi/pools'
+
 const ERC20_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function totalSupply() view returns (uint256)',
@@ -37,6 +40,7 @@ export interface AgentDecision {
   reasoning: string        // 1-3 sentence explanation
   marketSnapshot: MarketState
   proposedAt: number
+  source: 'claude' | 'mock' // 'claude' = real API call; 'mock' = fallback heuristic
 }
 
 const SYSTEM_PROMPT = `You are Mensa, an autonomous AI treasury agent on Mantle network.
@@ -66,10 +70,42 @@ You will receive the current market state and must respond with:
 
 Format your response as valid JSON only. No prose outside the JSON.`
 
+async function fetchEthPrice(): Promise<number> {
+  try {
+    const r = await fetch(COINGECKO_PRICE, { next: { revalidate: 60 } })
+    if (!r.ok) throw new Error('coingecko fetch failed')
+    const j = await r.json()
+    const px = j?.ethereum?.usd
+    if (typeof px === 'number' && px > 0) return px
+  } catch {}
+  return 3500 // last-resort fallback
+}
+
+async function fetchYieldAPRs(): Promise<{ mETHYieldAPR: number; usdyYieldAPR: number }> {
+  try {
+    const r = await fetch(LLAMA_POOLS, { next: { revalidate: 300 } })
+    if (!r.ok) throw new Error('llama fetch failed')
+    const j = await r.json()
+    const pools: Array<{ project: string; symbol: string; chain: string; apy: number }> = j.data || []
+
+    // mETH staking yield: meth-protocol (the Mantle LSP, on Ethereum)
+    const meth = pools.find(p => p.project === 'meth-protocol' && p.symbol === 'METH')
+    // USDY yield: ondo-yield-assets on Mantle
+    const usdy = pools.find(p => p.project === 'ondo-yield-assets' && p.symbol === 'USDY' && p.chain === 'Mantle')
+
+    return {
+      mETHYieldAPR: typeof meth?.apy === 'number' ? meth.apy : 4.0,
+      usdyYieldAPR: typeof usdy?.apy === 'number' ? usdy.apy : 4.8,
+    }
+  } catch {
+    return { mETHYieldAPR: 4.0, usdyYieldAPR: 4.8 }
+  }
+}
+
 export async function fetchMarketState(provider?: ethers.JsonRpcProvider): Promise<MarketState> {
   const rpc = provider || new ethers.JsonRpcProvider(MANTLE_MAINNET.rpc)
 
-  // Read mETH exchange rate (eth per 1 mETH)
+  // Read mETH exchange rate (eth per 1 mETH) — on-chain
   let methToEthRate = 1.0
   try {
     const meth = new ethers.Contract(MANTLE_MAINNET.contracts.mETH, METH_ABI, rpc)
@@ -77,26 +113,22 @@ export async function fetchMarketState(provider?: ethers.JsonRpcProvider): Promi
     const ethEquiv = await meth.methToETH(oneMETH)
     methToEthRate = parseFloat(ethers.formatUnits(ethEquiv, 18))
   } catch {
-    methToEthRate = 1.04 // fallback estimate
+    methToEthRate = 1.04
   }
 
-  // Real ETH price (would use Chainlink in production — use mock for now)
-  const ethPrice = 3500 // $3500 ETH placeholder
+  // Live ETH price (Coingecko) + live yields (DefiLlama)
+  const [ethPrice, yields] = await Promise.all([fetchEthPrice(), fetchYieldAPRs()])
   const mETHPrice = ethPrice * methToEthRate
-  const usdyPrice = 1.05 // USDY accumulates yield in price (~$1.05 after 1y at 5%)
-
-  // Yield APRs — would query on-chain rates in production
-  const mETHYieldAPR = 4.2 + (Math.random() - 0.5) * 0.6  // jittered for demo
-  const usdyYieldAPR = 4.8 + (Math.random() - 0.5) * 0.4
+  const usdyPrice = 1.05 // USDY price accumulates daily yield; ~$1.05 is a fair near-term anchor
 
   return {
     mETHPrice,
     usdyPrice,
-    mETHYieldAPR,
-    usdyYieldAPR,
+    mETHYieldAPR: yields.mETHYieldAPR,
+    usdyYieldAPR: yields.usdyYieldAPR,
     ethPrice,
-    totalTVL: 0, // updated when contracts deployed
-    currentMethAllocPct: 50, // updated from contract read
+    totalTVL: 0,
+    currentMethAllocPct: 50,
     timestamp: Date.now(),
   }
 }
@@ -147,6 +179,7 @@ Make your allocation decision. Respond with JSON only.`
       reasoning: parsed.reasoning || 'No reasoning provided',
       marketSnapshot: state,
       proposedAt: Date.now(),
+      source: 'claude',
     }
   } catch (e) {
     console.error('[agent] Claude call failed, using mock:', (e as Error).message)
@@ -182,6 +215,7 @@ function mockDecision(state: MarketState): AgentDecision {
     reasoning,
     marketSnapshot: state,
     proposedAt: Date.now(),
+    source: 'mock',
   }
 }
 

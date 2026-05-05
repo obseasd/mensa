@@ -3,6 +3,7 @@ import Nav from '@/components/Nav'
 import AgentLive from '@/components/AgentLive'
 import OnChainStats from '@/components/OnChainStats'
 import HomeTournamentFeed from '@/components/HomeTournamentFeed'
+import AllocationBar from '@/components/AllocationBar'
 
 export default function Home() {
   return (
@@ -35,6 +36,11 @@ export default function Home() {
 
           {/* Live on-chain stats */}
           <OnChainStats />
+
+          {/* Allocation split bar */}
+          <div className="mt-3">
+            <AllocationBar />
+          </div>
         </div>
 
         {/* Tournament Feed */}
