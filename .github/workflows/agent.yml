@@ -1,0 +1,34 @@
+name: Mensa agent loop
+
+# Runs every 30 minutes (UTC). GitHub may delay scheduled runs by a few
+# minutes under load — that's fine for our cadence.
+# Also exposes a manual trigger (workflow_dispatch) so we can fire a
+# decision on demand from the Actions tab.
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps
+
+      - name: Run agent (one cycle)
+        env:
+          PRIVATE_KEY: ${{ secrets.MENSA_AGENT_PK }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/agent-loop.mjs --once
