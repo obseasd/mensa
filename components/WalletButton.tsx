@@ -21,7 +21,7 @@ export default function WalletButton() {
 
   // Avoid hydration mismatch
   if (!mounted) {
-    return <button className="btn-secondary text-xs py-1.5 px-3">Connect</button>
+    return <button className="btn-accent text-xs px-3 py-1.5">Connect</button>
   }
 
   if (isConnected && address) {
@@ -35,12 +35,12 @@ export default function WalletButton() {
           {!isMantle && (
             <span className="text-[10px] text-orange-400">Wrong chain</span>
           )}
-          {isMantle && <span className="pulse" />}
+          {isMantle && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
           <span className="mono">{shortAddr(address)}</span>
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 top-full mt-2 w-56 card p-1 z-50">
+          <div className="absolute right-0 top-full mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-md shadow-xl p-1 z-50">
             {!isMantle && (
               <>
                 <button
@@ -83,13 +83,13 @@ export default function WalletButton() {
       <button
         onClick={() => setShowMenu(!showMenu)}
         disabled={isPending}
-        className="btn-secondary text-xs py-1.5 px-3"
+        className="btn-accent text-xs px-3 py-1.5 disabled:opacity-50"
       >
         {isPending ? 'Connecting...' : 'Connect Wallet'}
       </button>
 
       {showMenu && (
-        <div className="absolute right-0 top-full mt-2 w-48 card p-1 z-50">
+        <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--bg-card)] border border-[var(--border)] rounded-md shadow-xl p-1 z-50">
           {connectors.map((c) => (
             <button
               key={c.uid}

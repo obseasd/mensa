@@ -11,8 +11,12 @@ interface YieldPool {
   apyReward: number | null
   tvlUsd: number
   displayName: string
+  protocolName: string
+  tokenName: string
   riskTier: 'Low' | 'Medium' | 'High'
   riskColor: string
+  protocolLogo: string
+  tokenLogo: string
 }
 
 interface HistoryPoint {
@@ -81,6 +85,25 @@ function MiniChart({ history, timeframe }: { history: HistoryPoint[]; timeframe:
   )
 }
 
+function LogoStack({ protocolLogo, tokenLogo, alt }: { protocolLogo: string; tokenLogo: string; alt: string }) {
+  return (
+    <div className="relative w-10 h-10 shrink-0">
+      <img
+        src={protocolLogo}
+        alt={alt}
+        className="w-8 h-8 rounded-full bg-[var(--bg-elevated)] object-cover"
+        onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.3' }}
+      />
+      <img
+        src={tokenLogo}
+        alt={alt}
+        className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[var(--bg-elevated)] border border-[var(--bg)] object-cover"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+      />
+    </div>
+  )
+}
+
 function PoolCard({ pool }: { pool: YieldPool }) {
   const [timeframe, setTimeframe] = useState<Timeframe>('7d')
   const [history, setHistory] = useState<HistoryPoint[]>([])
@@ -104,19 +127,26 @@ function PoolCard({ pool }: { pool: YieldPool }) {
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span
-              className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-              style={{ background: `${pool.riskColor}15`, color: pool.riskColor }}
-            >
-              {pool.riskTier}
-            </span>
-            <span className="text-sm font-medium truncate">{pool.displayName}</span>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <LogoStack protocolLogo={pool.protocolLogo} tokenLogo={pool.tokenLogo} alt={pool.displayName} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium truncate">{pool.protocolName}</span>
+              <span
+                className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0"
+                style={{ background: `${pool.riskColor}15`, color: pool.riskColor }}
+              >
+                {pool.riskTier}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-[var(--fg-muted)] mt-0.5">
+              <span className="mono">{pool.tokenName}</span>
+              <span className="text-[var(--fg-dim)]">·</span>
+              <span>TVL {formatTvl(pool.tvlUsd)}</span>
+            </div>
           </div>
-          <div className="text-[10px] text-[var(--fg-dim)] mt-1">TVL {formatTvl(pool.tvlUsd)}</div>
         </div>
-        <div className="text-right ml-3">
+        <div className="text-right ml-3 shrink-0">
           <div className="text-2xl font-medium tracking-tight mono text-[var(--accent)]">
             {pool.apy.toFixed(2)}%
           </div>
@@ -126,7 +156,6 @@ function PoolCard({ pool }: { pool: YieldPool }) {
 
       {expanded && (
         <div className="mt-3 pt-3 border-t border-[var(--border)] space-y-3">
-          {/* Timeframe selector */}
           <div className="flex gap-1">
             {(['24h', '7d', '30d', 'all'] as const).map((tf) => (
               <button
@@ -143,14 +172,12 @@ function PoolCard({ pool }: { pool: YieldPool }) {
             ))}
           </div>
 
-          {/* Chart */}
           {loadingHistory ? (
             <div className="text-[10px] text-[var(--fg-dim)] py-4 text-center">Loading...</div>
           ) : (
             <MiniChart history={history} timeframe={timeframe} />
           )}
 
-          {/* Breakdown */}
           {(pool.apyBase !== null || pool.apyReward !== null) && (
             <div className="grid grid-cols-2 gap-2 text-[10px]">
               <div className="card p-2" style={{ background: 'var(--bg-elevated)' }}>

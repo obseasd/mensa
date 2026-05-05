@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAccount, useChainId, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { ACTIVE_CHAIN } from '@/lib/chains'
-import { mantleSepolia } from '@/lib/wagmi'
+import { mantle, mantleSepolia } from '@/lib/wagmi'
 
 const ERC20_ABI = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'a', type: 'address' }], outputs: [{ type: 'uint256' }] },
@@ -23,7 +23,7 @@ type Asset = 'mETH' | 'USDY'
 export default function DepositPanel() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
-  const isMantle = chainId === mantleSepolia.id
+  const isMantle = chainId === mantle.id || chainId === mantleSepolia.id
 
   const [asset, setAsset] = useState<Asset>('mETH')
   const [amount, setAmount] = useState('10')
@@ -118,10 +118,12 @@ export default function DepositPanel() {
   if (!isMantle) {
     return (
       <div className="card p-8 text-center">
-        <div className="text-sm text-orange-400">Switch to Mantle Sepolia (chain 5003)</div>
+        <div className="text-sm text-orange-400">Switch to Mantle (Mainnet 5000 or Sepolia 5003)</div>
       </div>
     )
   }
+
+  const isEligible = depositedBalance !== undefined && depositedBalance > BigInt(0)
 
   return (
     <div className="space-y-6">
@@ -137,15 +139,17 @@ export default function DepositPanel() {
           <div className="text-2xl font-medium tracking-tight mono">
             {depositedBalance !== undefined ? formatUnits(depositedBalance, 18).slice(0, 8) : '—'}
           </div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Deposited</div>
-          <div className="text-[10px] text-[var(--fg-dim)] mt-1">total {asset === 'mETH' ? 'mETH' : 'USDY'} in agent</div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Your deposit</div>
+          <div className="text-[10px] text-[var(--fg-dim)] mt-1">in Mensa agent</div>
         </div>
         <div className="card p-4">
-          <div className="text-2xl font-medium tracking-tight mono text-[var(--accent)]">
-            ✓
+          <div className={`text-2xl font-medium tracking-tight mono ${isEligible ? 'text-[var(--accent)]' : 'text-[var(--fg-dim)]'}`}>
+            {isEligible ? '✓' : '✗'}
           </div>
           <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Eligible to vote</div>
-          <div className="text-[10px] text-[var(--fg-dim)] mt-1">min stake = 0 (testnet)</div>
+          <div className="text-[10px] text-[var(--fg-dim)] mt-1">
+            {isEligible ? 'any deposit qualifies' : 'deposit any amount to qualify'}
+          </div>
         </div>
       </div>
 

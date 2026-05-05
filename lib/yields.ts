@@ -24,23 +24,75 @@ export interface YieldHistoryPoint {
 
 const LLAMA_BASE = 'https://yields.llama.fi'
 
-// Curated list — the protocols/tokens we care about for Mensa allocation
-// These are the assets the AI could realistically allocate into
+// Curated list — the protocols/tokens we care about for Mensa allocation.
+// Logo URLs use icons.llama.fi for protocols and TrustWallet assets for tokens.
+const PROTOCOL_LOGO = (slug: string) => `https://icons.llama.fi/${slug}.jpg`
+const TOKEN_LOGO_ETHEREUM = (addr: string) => `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${addr}/logo.png`
+
 export const CURATED_POOLS = {
-  // mETH / staking
-  'mantle-meth': { protocol: 'Mantle Native Staking', token: 'mETH', riskTier: 'Low' },
-  // Lending markets (Aave v3 on Mantle)
-  'aave-v3-usdc': { protocol: 'Aave v3', token: 'USDC', riskTier: 'Low' },
-  'aave-v3-usdt0': { protocol: 'Aave v3', token: 'USDT0', riskTier: 'Low' },
-  'aave-v3-usde': { protocol: 'Aave v3', token: 'USDe', riskTier: 'Medium' },
-  // RWA
-  'ondo-usdy': { protocol: 'Ondo Finance', token: 'USDY', riskTier: 'Low' },
-  // Lendle
-  'lendle-meth': { protocol: 'Lendle', token: 'mETH', riskTier: 'Medium' },
-  'lendle-cmeth': { protocol: 'Lendle', token: 'cmETH', riskTier: 'Medium' },
-  // High yield (degen tier)
-  'fluxion-bill': { protocol: 'Fluxion Network', token: 'BILL/USDT0', riskTier: 'High' },
-  'fluxion-opg': { protocol: 'Fluxion Network', token: 'OPG/USDT0', riskTier: 'High' },
+  'mantle-meth': {
+    protocol: 'Mantle Native Staking',
+    token: 'mETH',
+    riskTier: 'Low',
+    protocolLogo: PROTOCOL_LOGO('mantle'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0xd5F7838F5C461fefF7FE49ea5ebaF7728bB0ADfa'),
+  },
+  'aave-v3-usdc': {
+    protocol: 'Aave v3',
+    token: 'USDC',
+    riskTier: 'Low',
+    protocolLogo: PROTOCOL_LOGO('aave-v3'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
+  },
+  'aave-v3-usdt0': {
+    protocol: 'Aave v3',
+    token: 'USDT0',
+    riskTier: 'Low',
+    protocolLogo: PROTOCOL_LOGO('aave-v3'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0xdAC17F958D2ee523a2206206994597C13D831ec7'),
+  },
+  'aave-v3-usde': {
+    protocol: 'Aave v3',
+    token: 'USDe',
+    riskTier: 'Medium',
+    protocolLogo: PROTOCOL_LOGO('aave-v3'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0x4c9EDD5852cd905f086C759E8383e09bff1E68B3'),
+  },
+  'ondo-usdy': {
+    protocol: 'Ondo Finance',
+    token: 'USDY',
+    riskTier: 'Low',
+    protocolLogo: PROTOCOL_LOGO('ondo-yield-assets'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0x96F6eF951840721AdBF46Ac996b59E0235CB985C'),
+  },
+  'lendle-meth': {
+    protocol: 'Lendle',
+    token: 'mETH',
+    riskTier: 'Medium',
+    protocolLogo: PROTOCOL_LOGO('lendle-pooled-markets'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0xd5F7838F5C461fefF7FE49ea5ebaF7728bB0ADfa'),
+  },
+  'lendle-cmeth': {
+    protocol: 'Lendle',
+    token: 'cmETH',
+    riskTier: 'Medium',
+    protocolLogo: PROTOCOL_LOGO('lendle-pooled-markets'),
+    tokenLogo: PROTOCOL_LOGO('mantle'),
+  },
+  'fluxion-bill': {
+    protocol: 'Fluxion Network',
+    token: 'BILL/USDT0',
+    riskTier: 'High',
+    protocolLogo: PROTOCOL_LOGO('fluxion-network'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0xdAC17F958D2ee523a2206206994597C13D831ec7'),
+  },
+  'fluxion-opg': {
+    protocol: 'Fluxion Network',
+    token: 'OPG/USDT0',
+    riskTier: 'High',
+    protocolLogo: PROTOCOL_LOGO('fluxion-network'),
+    tokenLogo: TOKEN_LOGO_ETHEREUM('0xdAC17F958D2ee523a2206206994597C13D831ec7'),
+  },
 } as const
 
 const RISK_COLORS = {
@@ -51,8 +103,12 @@ const RISK_COLORS = {
 
 export interface CuratedYield extends YieldPool {
   displayName: string
+  protocolName: string
+  tokenName: string
   riskTier: 'Low' | 'Medium' | 'High'
   riskColor: string
+  protocolLogo: string
+  tokenLogo: string
 }
 
 /// Fetch all Mantle pools from DefiLlama, filter to curated list
@@ -84,8 +140,12 @@ export async function getMantleYields(): Promise<CuratedYield[]> {
         results.push({
           ...found,
           displayName: `${meta.protocol} · ${meta.token}`,
+          protocolName: meta.protocol,
+          tokenName: meta.token,
           riskTier: meta.riskTier as 'Low' | 'Medium' | 'High',
           riskColor: RISK_COLORS[meta.riskTier as 'Low' | 'Medium' | 'High'],
+          protocolLogo: meta.protocolLogo,
+          tokenLogo: meta.tokenLogo,
         })
       }
     }

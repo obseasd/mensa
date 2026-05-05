@@ -1,14 +1,8 @@
+import Link from 'next/link'
 import Nav from '@/components/Nav'
 import AgentLive from '@/components/AgentLive'
 import OnChainStats from '@/components/OnChainStats'
-
-const MOCK_TOURNAMENT = [
-  { round: 47, ai: '+12.4%', human: '+8.1%', winner: 'AI' },
-  { round: 46, ai: '+6.2%', human: '+9.8%', winner: 'Human' },
-  { round: 45, ai: '+15.7%', human: '+15.2%', winner: 'AI' },
-  { round: 44, ai: '+3.1%', human: '+4.4%', winner: 'Human' },
-  { round: 43, ai: '+22.0%', human: '+11.5%', winner: 'AI' },
-]
+import HomeTournamentFeed from '@/components/HomeTournamentFeed'
 
 export default function Home() {
   return (
@@ -35,8 +29,8 @@ export default function Home() {
           </p>
 
           <div className="flex items-center gap-3 mb-12">
-            <button className="btn-accent">Try with $1 USDY</button>
-            <button className="btn-secondary">Watch the Tournament</button>
+            <Link href="/deposit" className="btn-accent">Try with $1 USDY</Link>
+            <Link href="/tournament" className="btn-secondary">Watch the Tournament</Link>
           </div>
 
           {/* Live on-chain stats */}
@@ -50,29 +44,10 @@ export default function Home() {
               <h2 className="text-xl font-medium">Live Tournament</h2>
               <p className="text-sm text-[var(--fg-muted)] mt-1">AI vs Human, same inputs, same time horizon, settled on-chain.</p>
             </div>
-            <button className="btn-secondary text-xs">View all</button>
+            <Link href="/tournament" className="btn-secondary text-xs">View all</Link>
           </div>
 
-          <div className="card overflow-hidden">
-            <div className="grid grid-cols-12 px-5 py-3 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
-              <div className="col-span-2">Round</div>
-              <div className="col-span-3">AI</div>
-              <div className="col-span-3">Human</div>
-              <div className="col-span-2">Winner</div>
-              <div className="col-span-2 text-right">Status</div>
-            </div>
-            {MOCK_TOURNAMENT.map(({ round, ai, human, winner }) => (
-              <div key={round} className="grid grid-cols-12 px-5 py-4 border-b border-[var(--border)] last:border-b-0 text-sm hover:bg-white/[0.01] transition">
-                <div className="col-span-2 mono text-[var(--fg-muted)]">#{round}</div>
-                <div className={`col-span-3 mono ${winner === 'AI' ? 'text-[var(--accent)]' : 'text-[var(--fg)]'}`}>{ai}</div>
-                <div className={`col-span-3 mono ${winner === 'Human' ? 'text-[var(--accent)]' : 'text-[var(--fg)]'}`}>{human}</div>
-                <div className="col-span-2">
-                  <span className={`text-xs px-2 py-0.5 rounded ${winner === 'AI' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-white/5 text-[var(--fg-muted)]'}`}>{winner}</span>
-                </div>
-                <div className="col-span-2 text-right text-[var(--fg-muted)] text-xs">Settled</div>
-              </div>
-            ))}
-          </div>
+          <HomeTournamentFeed />
         </section>
 
         {/* What Mensa is thinking */}

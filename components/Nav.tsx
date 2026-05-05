@@ -12,7 +12,9 @@ export default function Nav() {
     <nav className="relative z-10 border-b border-[var(--border)]">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <img src="/logo.png" alt="Mensa" className="w-7 h-7 transition group-hover:opacity-80" />
+          <span className="w-8 h-8 rounded-md bg-zinc-800 flex items-center justify-center transition group-hover:bg-zinc-700">
+            <img src="/logo.png" alt="Mensa" className="w-6 h-6" />
+          </span>
           <span className="font-medium text-base tracking-tight">mensa</span>
         </Link>
 
@@ -30,7 +32,7 @@ export default function Nav() {
               href={href}
               className={`px-3 py-1.5 rounded-md transition ${
                 isActive(href)
-                  ? 'text-white'
+                  ? 'text-white font-medium'
                   : 'text-[var(--fg-muted)] hover:text-white'
               }`}
             >
