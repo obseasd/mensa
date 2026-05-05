@@ -45,6 +45,11 @@ const MENSA_AGENT_ABI = [
   'function currentMethAllocPct() view returns (uint8)',
   'function aiOperator() view returns (address)',
   'function maxAllocationBps() view returns (uint256)',
+  'function lastRebalanceAt() view returns (uint256)',
+]
+
+const ERC20_BAL_ABI = [
+  'function balanceOf(address) view returns (uint256)',
 ]
 
 export interface OnChainDecision {
@@ -75,6 +80,16 @@ function getProvider() {
   return new ethers.JsonRpcProvider(ACTIVE_CHAIN.rpc)
 }
 
+async function fetchEthPriceUsd(): Promise<number> {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', { next: { revalidate: 60 } })
+    if (!r.ok) return 3500
+    const j = await r.json()
+    const px = j?.ethereum?.usd
+    return typeof px === 'number' && px > 0 ? px : 3500
+  } catch { return 3500 }
+}
+
 export async function getProtocolStats(): Promise<{
   totalDecisions: number
   totalRounds: number
@@ -82,20 +97,34 @@ export async function getProtocolStats(): Promise<{
   humanWins: number
   aiWinRatePct: number
   currentMethAllocPct: number
+  tvlUsd: number
+  lastRebalanceAt: number
 }> {
   const provider = getProvider()
   const log = new ethers.Contract(ACTIVE_CHAIN.contracts.decisionLog, DECISION_LOG_ABI, provider)
   const tournament = new ethers.Contract(ACTIVE_CHAIN.contracts.tournamentVault, TOURNAMENT_ABI, provider)
   const agent = new ethers.Contract(ACTIVE_CHAIN.contracts.mensaAgent, MENSA_AGENT_ABI, provider)
+  const meth = new ethers.Contract(ACTIVE_CHAIN.contracts.mETH, ERC20_BAL_ABI, provider)
+  const usdy = new ethers.Contract(ACTIVE_CHAIN.contracts.USDY, ERC20_BAL_ABI, provider)
+  const agentAddr = ACTIVE_CHAIN.contracts.mensaAgent
 
-  const [totalDecisions, totalRounds, aiWins, humanWins, aiWinRateBps, currentMethAllocPct] = await Promise.all([
+  const [totalDecisions, totalRounds, aiWins, humanWins, aiWinRateBps, currentMethAllocPct, lastRebalanceAt, methBal, usdyBal, ethPrice] = await Promise.all([
     log.totalDecisions(),
     tournament.totalRounds(),
     tournament.aiWins(),
     tournament.humanWins(),
     tournament.aiWinRateBps(),
     agent.currentMethAllocPct(),
+    agent.lastRebalanceAt().catch(() => BigInt(0)),
+    meth.balanceOf(agentAddr).catch(() => BigInt(0)),
+    usdy.balanceOf(agentAddr).catch(() => BigInt(0)),
+    fetchEthPriceUsd(),
   ])
+
+  // TVL = mETH balance × ETH price × 1.04 (mETH/ETH rate) + USDY balance × $1.05
+  const methWhole = Number(ethers.formatUnits(methBal, 18))
+  const usdyWhole = Number(ethers.formatUnits(usdyBal, 18))
+  const tvlUsd = methWhole * ethPrice * 1.04 + usdyWhole * 1.05
 
   return {
     totalDecisions: Number(totalDecisions),
@@ -104,6 +133,8 @@ export async function getProtocolStats(): Promise<{
     humanWins: Number(humanWins),
     aiWinRatePct: Number(aiWinRateBps) / 100,
     currentMethAllocPct: Number(currentMethAllocPct),
+    tvlUsd,
+    lastRebalanceAt: Number(lastRebalanceAt),
   }
 }
 

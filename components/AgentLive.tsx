@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import DecisionsModal from './DecisionsModal'
 
 interface Decision {
   action: string
@@ -35,6 +35,7 @@ export default function AgentLive() {
   const [decision, setDecision] = useState<Decision | null>(null)
   const [loading, setLoading] = useState(true)
   const [tick, setTick] = useState(0)
+  const [modalOpen, setModalOpen] = useState(false)
 
   // Re-render every 5s for fresh "X seconds ago" labels
   useEffect(() => {
@@ -135,10 +136,15 @@ export default function AgentLive() {
 
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border)] text-[10px] text-[var(--fg-dim)]">
         <span>ETH ${marketSnapshot.ethPrice.toFixed(0)} · cost ~$0.0015 / decision</span>
-        <Link href="/decisions" className="text-[var(--accent)] hover:underline">
+        <button
+          onClick={() => setModalOpen(true)}
+          className="text-[var(--accent)] hover:underline cursor-pointer"
+        >
           View all decisions →
-        </Link>
+        </button>
       </div>
+
+      <DecisionsModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   )
 }
