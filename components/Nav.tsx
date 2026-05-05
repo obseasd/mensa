@@ -11,11 +11,11 @@ export default function Nav() {
   return (
     <nav className="relative z-10 border-b border-[var(--border)]">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <span className="w-8 h-8 rounded-md bg-zinc-800 flex items-center justify-center transition group-hover:bg-zinc-700">
-            <img src="/logo.png" alt="Mensa" className="w-6 h-6" />
+        <Link href="/" className="flex items-center gap-3 group">
+          <span className="w-11 h-11 rounded-lg bg-zinc-800 flex items-center justify-center transition group-hover:bg-zinc-700">
+            <img src="/logo.png" alt="Mensa" className="w-9 h-9" />
           </span>
-          <span className="font-medium text-base tracking-tight">mensa</span>
+          <span className="font-medium text-lg tracking-tight">mensa</span>
         </Link>
 
         <div className="flex items-center gap-1 text-sm">

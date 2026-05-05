@@ -25,8 +25,9 @@ export interface YieldHistoryPoint {
 const LLAMA_BASE = 'https://yields.llama.fi'
 
 // Curated list — the protocols/tokens we care about for Mensa allocation.
-// Logo URLs use icons.llama.fi for protocols and TrustWallet assets for tokens.
-const PROTOCOL_LOGO = (slug: string) => `https://icons.llama.fi/${slug}.jpg`
+// Logo URLs use icons.llamao.fi (current DefiLlama icon CDN; old icons.llama.fi 404s).
+const PROTOCOL_LOGO = (slug: string) => `https://icons.llamao.fi/icons/protocols/${slug}?w=48&h=48`
+const CHAIN_LOGO = (slug: string) => `https://icons.llamao.fi/icons/chains/rsz_${slug}?w=48&h=48`
 const TOKEN_LOGO_ETHEREUM = (addr: string) => `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${addr}/logo.png`
 
 export const CURATED_POOLS = {
@@ -34,7 +35,7 @@ export const CURATED_POOLS = {
     protocol: 'Mantle Native Staking',
     token: 'mETH',
     riskTier: 'Low',
-    protocolLogo: PROTOCOL_LOGO('mantle'),
+    protocolLogo: CHAIN_LOGO('mantle'),
     tokenLogo: TOKEN_LOGO_ETHEREUM('0xd5F7838F5C461fefF7FE49ea5ebaF7728bB0ADfa'),
   },
   'aave-v3-usdc': {

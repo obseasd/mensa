@@ -60,43 +60,52 @@ export default function Home() {
           <AgentLive />
         </section>
 
-        {/* Why Mantle */}
+        {/* What Mensa does */}
         <section className="mt-20 mb-12">
           <div className="mb-6">
-            <h2 className="text-xl font-medium">Built for Mantle</h2>
-            <p className="text-sm text-[var(--fg-muted)] mt-1">Mensa is not a portable agent. It is built around Mantle&apos;s unique stack.</p>
+            <h2 className="text-xl font-medium">What Mensa does</h2>
+            <p className="text-sm text-[var(--fg-muted)] mt-1">Six features, not six integrations. Each one is built around Mantle&apos;s unique stack.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-3">
             {[
               {
-                title: 'Native mETH staking',
-                detail: 'Mensa stakes ETH via Mantle\'s native liquid staking contract. The agent rebalances yields between mETH and USDY in real time.',
+                title: 'Auto-allocates between yield and safety',
+                detail: 'The agent reads live APYs and ETH macro signals to rebalance the treasury between staked ETH and T-bills. Targets the best risk-adjusted return at every step.',
+                stack: 'mETH (Mantle native staking) · USDY (Ondo on Mantle)',
               },
               {
-                title: 'Ondo USDY integration',
-                detail: 'Real T-bill yield via Ondo\'s USDY deployment on Mantle. Risk-adjusted allocations across CeFi-grade RWA.',
+                title: 'Explains every decision in plain English',
+                detail: 'Each rebalance ships with a written rationale. No black box: confidence score, market snapshot, and reasoning are all stored next to the action.',
+                stack: 'DecisionLog contract · low-gas full transparency',
               },
               {
-                title: 'Low-gas decision log',
-                detail: 'Every agent decision — including reasoning — is written on-chain. Mantle\'s low fees make full transparency economically viable.',
+                title: 'Proves itself in a Turing tournament',
+                detail: 'Anyone can stake their own allocation against the AI’s on the same round. After settlement, the closer-to-optimal allocation wins. No subjective judging.',
+                stack: 'TournamentVault contract on Mantle',
               },
               {
-                title: 'Byreal Skills CLI',
-                detail: 'Mensa exposes its agent loop as a Byreal Skill, callable from any compatible agent runtime. Composable by design.',
+                title: 'Sybil-resistant human voting',
+                detail: 'Vote weight scales with sqrt(reputation), so 100 fresh wallets can’t outweigh one reputable voter. Whales and bots both get diminishing returns.',
+                stack: 'Reputation contract · min-stake gate via MensaAgent',
               },
               {
-                title: 'Bybit signal integration',
-                detail: 'Off-chain market signals via Bybit API enrich the agent\'s decision context. CeFi data, DeFi execution.',
+                title: 'Pays humans who beat the AI',
+                detail: 'Mensa charges a 15% performance fee — only on yield, never on principal. The fee funds a bounty pool that pays out to humans who out-allocate the AI.',
+                stack: 'BountyPool contract · 50/30/20 winners/reputation/ops',
               },
               {
-                title: 'Tournament smart contract',
-                detail: 'A vault that pits AI vs human allocators on identical inputs. Performance is settled on-chain after each round.',
+                title: 'Composable as an agent skill',
+                detail: 'Mensa’s reasoning loop and on-chain calls are exposed as a Byreal Skill, callable from any compatible agent runtime. Bybit signals enrich the context.',
+                stack: 'Byreal Skills CLI · Bybit market data API',
               },
-            ].map(({ title, detail }) => (
+            ].map(({ title, detail, stack }) => (
               <div key={title} className="card p-5">
                 <div className="text-sm font-medium mb-2">{title}</div>
-                <div className="text-xs text-[var(--fg-muted)] leading-relaxed">{detail}</div>
+                <div className="text-xs text-[var(--fg-muted)] leading-relaxed mb-3">{detail}</div>
+                <div className="text-[10px] text-[var(--fg-dim)] mono pt-3 border-t border-[var(--border)]">
+                  {stack}
+                </div>
               </div>
             ))}
           </div>
