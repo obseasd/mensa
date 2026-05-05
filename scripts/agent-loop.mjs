@@ -227,8 +227,15 @@ async function runOnce(agent) {
 }
 
 async function main() {
-  const pk = process.env.PRIVATE_KEY
-  if (!pk) { console.error('Set PRIVATE_KEY'); process.exit(1) }
+  const rawPk = process.env.PRIVATE_KEY
+  if (!rawPk) { console.error('Set PRIVATE_KEY'); process.exit(1) }
+  const pk = rawPk.trim().replace(/^["']|["']$/g, '')
+  const isHex = /^0x[0-9a-fA-F]{64}$/.test(pk)
+  console.log(`PK debug: length=${pk.length} starts0x=${pk.startsWith('0x')} hex64=${isHex}`)
+  if (!isHex) {
+    console.error('PRIVATE_KEY format invalid. Expected 0x + 64 hex chars (66 total).')
+    process.exit(1)
+  }
 
   const provider = new ethers.JsonRpcProvider(RPC)
   const wallet = new ethers.Wallet(pk, provider)
