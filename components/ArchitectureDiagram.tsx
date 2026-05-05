@@ -4,8 +4,8 @@ export default function ArchitectureDiagram() {
       <svg viewBox="0 0 800 480" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3CC2A4" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#3CC2A4" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="#A3BAB9" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#A3BAB9" stopOpacity="0.02" />
           </linearGradient>
           <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
             <polygon points="0 0, 8 4, 0 8" fill="#5a5a5a" />
@@ -25,7 +25,7 @@ export default function ArchitectureDiagram() {
 
         {/* MensaAgent */}
         <g>
-          <rect x="100" y="120" width="220" height="80" rx="8" fill="url(#accent)" stroke="#3CC2A4" />
+          <rect x="100" y="120" width="220" height="80" rx="8" fill="url(#accent)" stroke="#A3BAB9" />
           <text x="210" y="148" textAnchor="middle" fill="#fff" fontSize="14" fontFamily="Inter" fontWeight="500">MensaAgent</text>
           <text x="210" y="166" textAnchor="middle" fill="#a0a0a0" fontSize="10" fontFamily="Inter">Treasury</text>
           <text x="210" y="182" textAnchor="middle" fill="#5a5a5a" fontSize="9" fontFamily="Inter">deposit / withdraw / executeAllocation</text>
@@ -75,7 +75,7 @@ export default function ArchitectureDiagram() {
 
         {/* BountyPool */}
         <g>
-          <rect x="290" y="340" width="220" height="60" rx="8" fill="url(#accent)" stroke="#3CC2A4" />
+          <rect x="290" y="340" width="220" height="60" rx="8" fill="url(#accent)" stroke="#A3BAB9" />
           <text x="400" y="365" textAnchor="middle" fill="#fff" fontSize="13" fontFamily="Inter" fontWeight="500">BountyPool</text>
           <text x="400" y="382" textAnchor="middle" fill="#a0a0a0" fontSize="10" fontFamily="Inter">15% perf fee → 50/30/20 split</text>
         </g>

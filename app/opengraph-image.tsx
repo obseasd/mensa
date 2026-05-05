@@ -35,11 +35,11 @@ export default async function Image() {
             style={{
               marginLeft: 'auto',
               padding: '6px 12px',
-              background: 'rgba(60, 194, 164, 0.12)',
-              border: '1px solid rgba(60, 194, 164, 0.3)',
+              background: 'rgba(163, 186, 185, 0.12)',
+              border: '1px solid rgba(163, 186, 185, 0.3)',
               borderRadius: 999,
               fontSize: 13,
-              color: '#3CC2A4',
+              color: '#A3BAB9',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -67,7 +67,7 @@ export default async function Image() {
             <span>·</span>
             <span>Agentic Wallets · AI x RWA · AI Trading</span>
           </div>
-          <div style={{ fontSize: 16, color: '#3CC2A4', fontFamily: 'monospace' }}>mensa-mu.vercel.app</div>
+          <div style={{ fontSize: 16, color: '#A3BAB9', fontFamily: 'monospace' }}>mensa-mu.vercel.app</div>
         </div>
       </div>
     ),

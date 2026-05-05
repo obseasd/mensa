@@ -68,7 +68,7 @@ function MiniChart({ history, timeframe }: { history: HistoryPoint[]; timeframe:
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-12">
         <polyline
           fill="none"
-          stroke={delta >= 0 ? '#3CC2A4' : '#ef4444'}
+          stroke={delta >= 0 ? '#A3BAB9' : '#ef4444'}
           strokeWidth="1.5"
           points={points}
           vectorEffect="non-scaling-stroke"

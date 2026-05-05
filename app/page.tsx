@@ -64,7 +64,7 @@ export default function Home() {
         <section className="mt-20 mb-12">
           <div className="mb-6">
             <h2 className="text-xl font-medium">What Mensa does</h2>
-            <p className="text-sm text-[var(--fg-muted)] mt-1">Six features, not six integrations. Each one is built around Mantle&apos;s unique stack.</p>
+            <p className="text-sm text-[var(--fg-muted)] mt-1">Six features. Each one is built around Mantle&apos;s unique stack.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-3">

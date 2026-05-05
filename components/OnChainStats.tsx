@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ACTIVE_CHAIN } from '@/lib/chains'
 
 interface Stats {
   totalDecisions: number
@@ -32,11 +31,10 @@ export default function OnChainStats() {
     { label: 'mETH Allocation', value: `${stats.currentMethAllocPct}%`, detail: 'live on Mantle' },
     { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—', detail: `${stats.totalRounds} rounds` },
     { label: 'Decisions Logged', value: stats.totalDecisions.toString(), detail: 'on-chain' },
-    { label: 'Network', value: ACTIVE_CHAIN.name === 'Mantle Sepolia' ? 'Sepolia' : 'Mainnet', detail: `chain ${ACTIVE_CHAIN.id}` },
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {items.map(({ label, value, detail }) => (
         <div key={label} className="card p-4">
           <div className={`text-2xl font-medium tracking-tight mono ${loading ? 'opacity-40' : ''}`}>{value}</div>

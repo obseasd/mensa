@@ -11,11 +11,11 @@
   --fg-muted: #a0a0a0;
   --fg-dim: #5a5a5a;
 
-  --accent: #3CC2A4;
-  --accent-soft: rgba(60, 194, 164, 0.10);
-  --accent-strong: #4FD9B9;
+  --accent: #A3BAB9;
+  --accent-soft: rgba(163, 186, 185, 0.12);
+  --accent-strong: #BDD2D1;
 
-  --positive: #3CC2A4;
+  --positive: #A3BAB9;
   --negative: #ef4444;
   --neutral: #a0a0a0;
 }

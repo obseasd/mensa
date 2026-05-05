@@ -97,7 +97,7 @@ export const CURATED_POOLS = {
 } as const
 
 const RISK_COLORS = {
-  Low: '#3CC2A4',
+  Low: '#A3BAB9',
   Medium: '#fbbf24',
   High: '#ef4444',
 }
