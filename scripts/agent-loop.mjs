@@ -31,7 +31,53 @@ const TOURNAMENT_ADDR = '0x92E6B40da9566d6b7176420D88818500dB77d122'
 const TOURNAMENT_ABI = [
   'function totalRounds() view returns (uint256)',
   'function rounds(uint256) view returns (uint256 id, uint64 startTime, uint64 settlementTime, uint256 startMethPrice, uint256 startUsdyPrice, uint256 settleMethPrice, uint256 settleUsdyPrice, uint8 aiAllocMeth, uint8 humanAllocMeth, int256 aiReturnBps, int256 humanReturnBps, uint8 outcome, bool settled)',
+  'function settleRound(uint256 roundId, uint256 settleMethPrice, uint256 settleUsdyPrice, uint8 aggregateHumanAlloc) external',
+  'function getVotersCount(uint256) view returns (uint256)',
 ]
+
+// Walk recent rounds and settle any whose 24h timer has expired.
+// Uses current market prices for the settle and a 50% default for human
+// aggregate when nobody voted (conservative neutral baseline).
+async function settleExpiredRounds(wallet, state) {
+  const t = new ethers.Contract(TOURNAMENT_ADDR, TOURNAMENT_ABI, wallet)
+  const total = Number(await t.totalRounds())
+  if (total === 0) return []
+  const now = Math.floor(Date.now() / 1000)
+  const start = Math.max(1, total - 20)
+  const settled = []
+  for (let id = total; id >= start; id--) {
+    let r
+    try { r = await t.rounds(id) } catch { continue }
+    if (r.settled) continue
+    if (now < Number(r.settlementTime)) continue
+
+    // Default human aggregate is 50/50. If voters exist, the contract has
+    // their individual votes but no on-chain aggregator — for now we keep
+    // the conservative default. Active voting flow will compute this off-chain.
+    let aggregateHumanAlloc = 50
+    try {
+      const voters = Number(await t.getVotersCount(id))
+      if (voters > 0) {
+        // TODO: compute weighted avg from individual votes when voting picks up.
+        aggregateHumanAlloc = 50
+      }
+    } catch {}
+
+    const settleMethPrice = BigInt(Math.floor(state.methPrice * 1e8))
+    const settleUsdyPrice = BigInt(Math.floor(state.usdyPrice * 1e8))
+    console.log(`  settling round #${id} mETH=$${state.methPrice.toFixed(2)} USDY=$${state.usdyPrice.toFixed(4)} humanAggr=${aggregateHumanAlloc}%`)
+    try {
+      const tx = await t.settleRound(id, settleMethPrice, settleUsdyPrice, aggregateHumanAlloc)
+      console.log(`    tx: ${tx.hash}`)
+      await tx.wait()
+      console.log(`    confirmed`)
+      settled.push(id)
+    } catch (e) {
+      console.error(`    failed: ${e.message}`)
+    }
+  }
+  return settled
+}
 
 async function fetchTrackRecord(provider) {
   try {
@@ -220,6 +266,14 @@ async function runOnce(agent) {
   const currentMeth = Number(await agent.currentMethAllocPct())
   const state = await fetchMarketState(currentMeth)
   const apiKey = process.env.ANTHROPIC_API_KEY
+
+  // Settle any rounds whose 24h timer has expired BEFORE deciding,
+  // so the new decision benefits from up-to-date track record.
+  const settledIds = await settleExpiredRounds(agent.runner, state)
+  if (settledIds.length > 0) {
+    console.log(`Auto-settled rounds: ${settledIds.join(', ')}`)
+  }
+
   const trackRecord = await fetchTrackRecord(agent.runner.provider)
   console.log(`---\n${trackRecord}\n---`)
 
