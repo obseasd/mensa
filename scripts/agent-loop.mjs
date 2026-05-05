@@ -12,8 +12,9 @@
 import { ethers } from 'ethers'
 import Anthropic from '@anthropic-ai/sdk'
 
-const RPC = 'https://rpc.sepolia.mantle.xyz'
-const AGENT_ADDR = '0x0B1018150C18dF5EB453Baa25a169884069AA81F'
+// Mantle Mainnet
+const RPC = 'https://rpc.mantle.xyz'
+const AGENT_ADDR = '0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49'
 
 const COINGECKO_PRICE = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
 const LLAMA_POOLS = 'https://yields.llama.fi/pools'

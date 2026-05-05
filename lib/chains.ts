@@ -39,4 +39,4 @@ export const MANTLE_SEPOLIA = {
 } as const
 
 // Active chain — switch between testnet and mainnet here
-export const ACTIVE_CHAIN = MANTLE_SEPOLIA
+export const ACTIVE_CHAIN = MANTLE_MAINNET

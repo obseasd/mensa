@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ACTIVE_CHAIN } from '@/lib/chains'
-import { mantleSepolia } from '@/lib/wagmi'
+import { mantle, mantleSepolia } from '@/lib/wagmi'
 
 const VAULT_ABI = [
   {
@@ -40,7 +40,7 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
   const { writeContract, isPending, data: txHash } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
-  const isMantle = chainId === mantleSepolia.id
+  const isMantle = chainId === mantle.id || chainId === mantleSepolia.id
 
   // Live simulation when allocation changes
   useEffect(() => {
