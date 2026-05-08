@@ -226,10 +226,10 @@ export default function TournamentList() {
         {[
           { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${aiWinRate.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L`, accent: true },
           {
-            label: 'Alpha (since calibrated)',
-            value: hasAlpha ? `${alphaSign}${alphaC!.annualizedAlphaPct.toFixed(2)}%` : '—',
+            label: 'Alpha / round (since calibrated)',
+            value: hasAlpha ? `${alphaSign}${alphaC!.perRoundAvgAlphaBps.toFixed(0)} bps` : '—',
             detail: hasAlpha
-              ? `${alphaSign}${alphaC!.alphaBps} bps over ${alphaC!.settledRounds} round${alphaC!.settledRounds > 1 ? 's' : ''}`
+              ? `${alphaSign}${alphaC!.alphaBps} bps cum. · ${alphaC!.settledRounds} round${alphaC!.settledRounds > 1 ? 's' : ''}`
               : 'memory loop active from round #2',
             accent: true,
           },

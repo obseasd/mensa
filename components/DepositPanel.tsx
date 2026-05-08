@@ -221,16 +221,19 @@ export default function DepositPanel() {
         </div>
       </div>
 
-      {/* APY breakdown: passive yield vs Mensa AI (yield + alpha) */}
+      {/* APY breakdown: yield is the deterministic floor, alpha is the variable add-on */}
       {proj && (() => {
         const passive5050Yield = (50 * proj.methApr + 50 * proj.usdyApr) / 100
         const aiYieldAtAlloc = proj.estimatedApyPct
-        const observedAlpha = alphaPct ?? 0
-        const aiTotalApy = aiYieldAtAlloc + observedAlpha
-        const uplift = aiTotalApy - passive5050Yield
-        const upliftSign = uplift >= 0 ? '+' : ''
-        const alphaSign = observedAlpha >= 0 ? '+' : ''
-        const earlySample = alphaSampleRounds < 10
+        const yieldUplift = aiYieldAtAlloc - passive5050Yield
+        const yieldUpliftSign = yieldUplift >= 0 ? '+' : ''
+        // Per-round avg alpha in bps (more honest than annualizing 5 rounds × 365)
+        const perRoundAlphaBps = alphaSampleRounds > 0 && alphaPct !== null
+          ? Math.round((alphaPct / 365) * 100) // annualizedPct -> per-round bps
+          : 0
+        const cumAlphaBps = alphaSampleRounds > 0 ? perRoundAlphaBps * alphaSampleRounds : 0
+        const alphaSign = perRoundAlphaBps >= 0 ? '+' : ''
+        const enoughForAnnualization = alphaSampleRounds >= 30
         return (
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
@@ -238,69 +241,73 @@ export default function DepositPanel() {
               <div className="text-[10px] text-[var(--fg-dim)]">live · DefiLlama yields</div>
             </div>
 
-            {/* Passive 50/50 */}
+            {/* Yield comparison (deterministic) */}
             <div className="space-y-3">
               <div className="pb-3 border-b border-[var(--border)]">
                 <div className="flex items-baseline justify-between mb-1">
-                  <div className="text-xs text-[var(--fg-muted)]">Passive 50/50 hold</div>
+                  <div className="text-xs text-[var(--fg-muted)]">Passive 50/50 hold (yield only)</div>
                   <div className="text-xl font-medium mono">{passive5050Yield.toFixed(2)}%</div>
                 </div>
-                <div className="text-[10px] text-[var(--fg-dim)]">
-                  Yield only · no rebalancing · what you get holding mETH+USDY without doing anything
-                </div>
-                <div className="text-[10px] text-[var(--fg-dim)] mt-1 mono">
+                <div className="text-[10px] text-[var(--fg-dim)] mono">
                   mETH {proj.methApr.toFixed(2)}% × 50% + USDY {proj.usdyApr.toFixed(2)}% × 50%
                 </div>
               </div>
 
-              {/* Mensa AI active */}
               <div className="pb-3 border-b border-[var(--border)]">
                 <div className="flex items-baseline justify-between mb-1">
-                  <div className="text-xs text-[var(--accent)]">Mensa AI active</div>
-                  <div className="text-2xl font-medium mono text-[var(--accent)]">
-                    {aiTotalApy >= 0 ? '+' : ''}{aiTotalApy.toFixed(2)}%
-                  </div>
+                  <div className="text-xs text-[var(--accent)]">Mensa AI yield (at {proj.methAllocPct}%/{100 - proj.methAllocPct}% split)</div>
+                  <div className="text-xl font-medium mono text-[var(--accent)]">{aiYieldAtAlloc.toFixed(2)}%</div>
                 </div>
-                <div className="text-[10px] text-[var(--fg-dim)] space-y-0.5 mt-2">
-                  <div className="flex justify-between">
-                    <span>Yield at current {proj.methAllocPct}%/{100 - proj.methAllocPct}% split</span>
-                    <span className="mono">{aiYieldAtAlloc.toFixed(2)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>+ Allocation alpha (annualized, {alphaSampleRounds} round{alphaSampleRounds === 1 ? '' : 's'})</span>
-                    <span className="mono">{alphaSign}{observedAlpha.toFixed(2)}%</span>
-                  </div>
+                <div className="text-[10px] text-[var(--fg-dim)] mono">
+                  mETH {proj.methApr.toFixed(2)}% × {proj.methAllocPct}% + USDY {proj.usdyApr.toFixed(2)}% × {100 - proj.methAllocPct}%
                 </div>
               </div>
 
-              {/* Uplift */}
               <div className="flex items-baseline justify-between">
-                <div className="text-xs text-[var(--fg-muted)]">Mensa uplift vs passive</div>
-                <div className={`text-base font-medium mono ${uplift >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
-                  {upliftSign}{uplift.toFixed(2)}pp
+                <div className="text-xs text-[var(--fg-muted)]">Yield uplift</div>
+                <div className={`text-sm font-medium mono ${yieldUplift >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                  {yieldUpliftSign}{yieldUplift.toFixed(2)}pp
                 </div>
               </div>
             </div>
 
-            {earlySample && (
-              <div className="text-[10px] text-[var(--fg-dim)] mt-4 pt-3 border-t border-[var(--border)]">
-                ⚠️ Alpha is annualized from a small sample ({alphaSampleRounds} round{alphaSampleRounds === 1 ? '' : 's'}).
-                Expect high variance until ≥30 rounds settle.
+            {/* Allocation alpha — kept separate from yield, no premature annualization */}
+            <div className="mt-5 pt-4 border-t border-[var(--border)] space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">Allocation alpha</div>
+                <div className="text-[10px] text-[var(--fg-dim)]">on top of yield</div>
               </div>
-            )}
+              {alphaSampleRounds > 0 ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-baseline justify-between text-xs">
+                    <span className="text-[var(--fg-muted)]">Per-round average</span>
+                    <span className={`mono ${perRoundAlphaBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                      {alphaSign}{perRoundAlphaBps} bps
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between text-xs">
+                    <span className="text-[var(--fg-muted)]">Cumulative ({alphaSampleRounds} round{alphaSampleRounds > 1 ? 's' : ''})</span>
+                    <span className={`mono ${cumAlphaBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                      {alphaSign}{cumAlphaBps} bps
+                    </span>
+                  </div>
+                  {!enoughForAnnualization && (
+                    <div className="text-[10px] text-[var(--fg-dim)] pt-1.5">
+                      Annualized alpha will appear once ≥30 rounds settle. Below that, extrapolating {alphaSampleRounds} day{alphaSampleRounds > 1 ? 's' : ''} of data to a year is statistical noise.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-[10px] text-[var(--fg-dim)]">No settled rounds yet — alpha will populate as the agent acts.</div>
+              )}
+            </div>
 
             {depositedWhole > 0 && (
-              <div className="text-xs text-[var(--fg-muted)] mt-4 pt-3 border-t border-[var(--border)]">
-                Your <span className="mono">{fmt(depositedWhole, 4)} {asset}</span> ({fmtUsd(depositedWhole * tokenUsd)})
-                projects to{' '}
-                <span className={`mono ${aiTotalApy >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
-                  {fmtUsd(depositedWhole * tokenUsd * aiTotalApy / 100)}
-                </span>{' '}
-                / year before fees, vs{' '}
-                <span className="mono text-[var(--fg-muted)]">
-                  {fmtUsd(depositedWhole * tokenUsd * passive5050Yield / 100)}
-                </span>{' '}
-                passive.
+              <div className="text-xs text-[var(--fg-muted)] mt-4 pt-3 border-t border-[var(--border)] leading-relaxed">
+                Your <span className="mono">{fmt(depositedWhole, 4)} {asset}</span>{' '}
+                ({fmtUsd(depositedWhole * tokenUsd)}) earns{' '}
+                <span className="text-[var(--accent)] mono">~{fmtUsd(depositedWhole * tokenUsd * aiYieldAtAlloc / 100)}</span>/year
+                from yield alone, before alpha and the 15% perf fee.
               </div>
             )}
           </div>
