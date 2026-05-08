@@ -99,7 +99,10 @@ export interface AlphaStats {
   }>
 }
 
-export async function getAlphaStats(limit = 20): Promise<AlphaStats> {
+/// Compute alpha stats over the last `limit` settled rounds.
+/// `skipRoundIds` lets us exclude rounds (e.g. round #1 was the cold-start
+/// before the memory loop existed; for "since calibrated" we pass [1]).
+export async function getAlphaStats(limit = 20, skipRoundIds: number[] = []): Promise<AlphaStats> {
   const provider = getProvider()
   const tournament = new ethers.Contract(ACTIVE_CHAIN.contracts.tournamentVault, TOURNAMENT_ABI, provider)
   const total = Number(await tournament.totalRounds())
@@ -108,6 +111,7 @@ export async function getAlphaStats(limit = 20): Promise<AlphaStats> {
   }
   const ids = Array.from({ length: Math.min(limit, total) }, (_, i) => total - i)
   const rounds = await Promise.all(ids.map(id => tournament.rounds(id)))
+  const skip = new Set(skipRoundIds)
 
   let cumAi = 0
   let cumBase = 0
@@ -115,6 +119,7 @@ export async function getAlphaStats(limit = 20): Promise<AlphaStats> {
   const recent: AlphaStats['recent'] = []
   for (const r of rounds) {
     if (!r.settled) continue
+    if (skip.has(Number(r.id))) continue
     const startMeth = Number(r.startMethPrice)
     const settleMeth = Number(r.settleMethPrice)
     const startUsdy = Number(r.startUsdyPrice)

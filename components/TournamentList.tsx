@@ -33,6 +33,7 @@ interface Stats {
   humanWins: number
   aiWinRatePct: number
   alpha?: AlphaSummary
+  alphaCalibrated?: AlphaSummary
 }
 
 const REFERENCE_TVL_USD = 1000  // demo projection: "if treasury was $1000"
@@ -212,8 +213,11 @@ export default function TournamentList() {
   }, [])
 
   const aiWinRate = stats.totalRounds > 0 ? stats.aiWinRatePct : 0
-  const alpha = stats.alpha
-  const alphaSign = alpha && alpha.alphaBps >= 0 ? '+' : ''
+  // 'since calibrated' = since the memory loop kicked in (round #1 was cold start).
+  // Falls back to full alpha if we don't have it yet.
+  const alphaC = stats.alphaCalibrated ?? stats.alpha
+  const alphaSign = alphaC && alphaC.alphaBps >= 0 ? '+' : ''
+  const hasAlpha = !!alphaC && alphaC.settledRounds > 0
 
   return (
     <div className="space-y-8">
@@ -221,7 +225,14 @@ export default function TournamentList() {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${aiWinRate.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L`, accent: true },
-          { label: 'Alpha Annualized', value: alpha && alpha.settledRounds > 0 ? `${alphaSign}${alpha.annualizedAlphaPct.toFixed(2)}%` : '—', detail: alpha && alpha.settledRounds > 0 ? `${alphaSign}${alpha.alphaBps} bps cum.` : 'building', accent: true },
+          {
+            label: 'Alpha (since calibrated)',
+            value: hasAlpha ? `${alphaSign}${alphaC!.annualizedAlphaPct.toFixed(2)}%` : '—',
+            detail: hasAlpha
+              ? `${alphaSign}${alphaC!.alphaBps} bps over ${alphaC!.settledRounds} round${alphaC!.settledRounds > 1 ? 's' : ''}`
+              : 'memory loop active from round #2',
+            accent: true,
+          },
           { label: 'AI Wins', value: stats.aiWins, detail: 'on-chain' },
           { label: 'Total Rounds', value: stats.totalRounds, detail: `${stats.totalRounds - stats.aiWins - stats.humanWins} pending` },
         ].map(({ label, value, detail, accent }) => (

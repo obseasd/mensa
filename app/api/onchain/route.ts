@@ -6,13 +6,16 @@ export const revalidate = 0
 
 export async function GET() {
   try {
-    const [stats, rounds, alpha] = await Promise.all([
+    // Round #1 was the genesis decision before the memory loop existed.
+    // 'alphaCalibrated' excludes it so we can show "alpha since AI started learning".
+    const [stats, rounds, alpha, alphaCalibrated] = await Promise.all([
       getProtocolStats(),
       getRecentRounds(20),
       getAlphaStats(20),
+      getAlphaStats(20, [1]),
     ])
     return NextResponse.json({
-      stats: { ...stats, alpha },
+      stats: { ...stats, alpha, alphaCalibrated },
       rounds: rounds.map(r => ({
         ...r,
         startMethPrice: r.startMethPrice.toString(),

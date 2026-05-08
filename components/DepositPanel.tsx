@@ -56,6 +56,8 @@ export default function DepositPanel() {
   const [proj, setProj] = useState<ApyProjection | null>(null)
   const [ethPrice, setEthPrice] = useState<number | null>(null)
   const [tvlUsd, setTvlUsd] = useState<number | null>(null)
+  const [alphaPct, setAlphaPct] = useState<number | null>(null) // annualized alpha since calibrated
+  const [alphaSampleRounds, setAlphaSampleRounds] = useState<number>(0)
 
   useEffect(() => {
     fetch('/api/agent').then(r => r.json()).then(d => {
@@ -74,6 +76,11 @@ export default function DepositPanel() {
     }).catch(() => {})
     fetch('/api/onchain').then(r => r.json()).then(d => {
       if (typeof d?.stats?.tvlUsd === 'number') setTvlUsd(d.stats.tvlUsd)
+      const a = d?.stats?.alphaCalibrated ?? d?.stats?.alpha
+      if (a && typeof a.annualizedAlphaPct === 'number') {
+        setAlphaPct(a.annualizedAlphaPct)
+        setAlphaSampleRounds(a.settledRounds || 0)
+      }
     }).catch(() => {})
   }, [])
 
@@ -192,7 +199,6 @@ export default function DepositPanel() {
   const walletWhole = walletBalance !== undefined ? Number(formatUnits(walletBalance, 18)) : 0
   const depositedWhole = depositedBalance !== undefined ? Number(formatUnits(depositedBalance, 18)) : 0
   const amountWhole = (() => { try { return Number(amount) || 0 } catch { return 0 } })()
-  const projectedYearlyUsd = depositedWhole * tokenUsd * (proj?.estimatedApyPct ?? 0) / 100
 
   return (
     <div className="space-y-6">
@@ -215,29 +221,91 @@ export default function DepositPanel() {
         </div>
       </div>
 
-      {/* Yield projection */}
-      {proj && (
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-[10px] uppercase tracking-wider text-[var(--accent)]">Estimated APY</div>
-            <div className="text-[10px] text-[var(--fg-dim)]">live · DefiLlama yields</div>
-          </div>
-          <div className="flex items-baseline gap-3 mb-3">
-            <div className="text-3xl font-medium tracking-tight mono text-[var(--accent)]">{proj.estimatedApyPct.toFixed(2)}%</div>
-            <div className="text-xs text-[var(--fg-muted)]">at current {proj.methAllocPct}% / {100 - proj.methAllocPct}% split</div>
-          </div>
-          <div className="text-[10px] text-[var(--fg-dim)] grid grid-cols-2 gap-2 pt-3 border-t border-[var(--border)]">
-            <div>mETH staking: <span className="text-white mono">{proj.methApr.toFixed(2)}%</span> × <span className="mono">{proj.methAllocPct}%</span></div>
-            <div>USDY T-bills: <span className="text-white mono">{proj.usdyApr.toFixed(2)}%</span> × <span className="mono">{100 - proj.methAllocPct}%</span></div>
-          </div>
-          {depositedWhole > 0 && (
-            <div className="text-xs text-[var(--fg-muted)] mt-3 pt-3 border-t border-[var(--border)]">
-              Your <span className="mono">{fmt(depositedWhole, 4)} {asset}</span> projects to{' '}
-              <span className="text-[var(--accent)] mono">~{fmtUsd(projectedYearlyUsd)}</span> / year before fees.
+      {/* APY breakdown: passive yield vs Mensa AI (yield + alpha) */}
+      {proj && (() => {
+        const passive5050Yield = (50 * proj.methApr + 50 * proj.usdyApr) / 100
+        const aiYieldAtAlloc = proj.estimatedApyPct
+        const observedAlpha = alphaPct ?? 0
+        const aiTotalApy = aiYieldAtAlloc + observedAlpha
+        const uplift = aiTotalApy - passive5050Yield
+        const upliftSign = uplift >= 0 ? '+' : ''
+        const alphaSign = observedAlpha >= 0 ? '+' : ''
+        const earlySample = alphaSampleRounds < 10
+        return (
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--accent)]">APY breakdown</div>
+              <div className="text-[10px] text-[var(--fg-dim)]">live · DefiLlama yields</div>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Passive 50/50 */}
+            <div className="space-y-3">
+              <div className="pb-3 border-b border-[var(--border)]">
+                <div className="flex items-baseline justify-between mb-1">
+                  <div className="text-xs text-[var(--fg-muted)]">Passive 50/50 hold</div>
+                  <div className="text-xl font-medium mono">{passive5050Yield.toFixed(2)}%</div>
+                </div>
+                <div className="text-[10px] text-[var(--fg-dim)]">
+                  Yield only · no rebalancing · what you get holding mETH+USDY without doing anything
+                </div>
+                <div className="text-[10px] text-[var(--fg-dim)] mt-1 mono">
+                  mETH {proj.methApr.toFixed(2)}% × 50% + USDY {proj.usdyApr.toFixed(2)}% × 50%
+                </div>
+              </div>
+
+              {/* Mensa AI active */}
+              <div className="pb-3 border-b border-[var(--border)]">
+                <div className="flex items-baseline justify-between mb-1">
+                  <div className="text-xs text-[var(--accent)]">Mensa AI active</div>
+                  <div className="text-2xl font-medium mono text-[var(--accent)]">
+                    {aiTotalApy >= 0 ? '+' : ''}{aiTotalApy.toFixed(2)}%
+                  </div>
+                </div>
+                <div className="text-[10px] text-[var(--fg-dim)] space-y-0.5 mt-2">
+                  <div className="flex justify-between">
+                    <span>Yield at current {proj.methAllocPct}%/{100 - proj.methAllocPct}% split</span>
+                    <span className="mono">{aiYieldAtAlloc.toFixed(2)}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>+ Allocation alpha (annualized, {alphaSampleRounds} round{alphaSampleRounds === 1 ? '' : 's'})</span>
+                    <span className="mono">{alphaSign}{observedAlpha.toFixed(2)}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Uplift */}
+              <div className="flex items-baseline justify-between">
+                <div className="text-xs text-[var(--fg-muted)]">Mensa uplift vs passive</div>
+                <div className={`text-base font-medium mono ${uplift >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                  {upliftSign}{uplift.toFixed(2)}pp
+                </div>
+              </div>
+            </div>
+
+            {earlySample && (
+              <div className="text-[10px] text-[var(--fg-dim)] mt-4 pt-3 border-t border-[var(--border)]">
+                ⚠️ Alpha is annualized from a small sample ({alphaSampleRounds} round{alphaSampleRounds === 1 ? '' : 's'}).
+                Expect high variance until ≥30 rounds settle.
+              </div>
+            )}
+
+            {depositedWhole > 0 && (
+              <div className="text-xs text-[var(--fg-muted)] mt-4 pt-3 border-t border-[var(--border)]">
+                Your <span className="mono">{fmt(depositedWhole, 4)} {asset}</span> ({fmtUsd(depositedWhole * tokenUsd)})
+                projects to{' '}
+                <span className={`mono ${aiTotalApy >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                  {fmtUsd(depositedWhole * tokenUsd * aiTotalApy / 100)}
+                </span>{' '}
+                / year before fees, vs{' '}
+                <span className="mono text-[var(--fg-muted)]">
+                  {fmtUsd(depositedWhole * tokenUsd * passive5050Yield / 100)}
+                </span>{' '}
+                passive.
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Deposit / Withdraw card */}
       <div className="card p-5 space-y-4">
