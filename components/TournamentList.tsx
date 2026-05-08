@@ -16,7 +16,26 @@ interface Round {
   settled: boolean
   startMethPrice?: string
   startUsdyPrice?: string
+  settleMethPrice?: string
+  settleUsdyPrice?: string
 }
+
+interface AlphaSummary {
+  settledRounds: number
+  alphaBps: number
+  perRoundAvgAlphaBps: number
+  annualizedAlphaPct: number
+}
+
+interface Stats {
+  totalRounds: number
+  aiWins: number
+  humanWins: number
+  aiWinRatePct: number
+  alpha?: AlphaSummary
+}
+
+const REFERENCE_TVL_USD = 1000  // demo projection: "if treasury was $1000"
 
 function countdown(settlementTime: number): string {
   const remaining = settlementTime - Math.floor(Date.now() / 1000)
@@ -28,25 +47,158 @@ function countdown(settlementTime: number): string {
   return `settles in ${m}m`
 }
 
-interface Stats {
-  totalRounds: number
-  aiWins: number
-  humanWins: number
-  aiWinRatePct: number
-}
-
-const OUTCOME_NAMES = ['Pending', 'AI', 'Human', 'Tie']
-
-function formatBps(bpsStr: string): string {
-  const bps = Number(bpsStr)
+function formatBps(bpsStr: string | number): string {
+  const bps = typeof bpsStr === 'string' ? Number(bpsStr) : bpsStr
   const pct = bps / 100
   return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`
+}
+
+function formatBpsRaw(bps: number): string {
+  return `${bps >= 0 ? '+' : ''}${bps} bps`
+}
+
+function fmtUsd(n: number): string {
+  if (!isFinite(n)) return '—'
+  const abs = Math.abs(n)
+  const sign = n < 0 ? '-' : (n > 0 ? '+' : '')
+  if (abs >= 1000) return `${sign}$${(abs / 1000).toFixed(2)}k`
+  return `${sign}$${abs.toFixed(2)}`
+}
+
+function fmtPriceUsd(rawWith8Decimals: string | undefined): string {
+  if (!rawWith8Decimals) return '—'
+  const n = Number(rawWith8Decimals) / 1e8
+  if (!isFinite(n) || n === 0) return '—'
+  return n >= 1 ? `$${n.toFixed(2)}` : `$${n.toFixed(4)}`
+}
+
+function AllocBar({ methPct }: { methPct: number }) {
+  return (
+    <div className="flex h-1 rounded-full overflow-hidden bg-[var(--border)] w-16">
+      <div className="bg-[var(--accent)]" style={{ width: `${methPct}%` }} />
+      <div className="bg-white/30" style={{ width: `${100 - methPct}%` }} />
+    </div>
+  )
+}
+
+function RoundDetail({ r }: { r: Round }) {
+  const startMeth = r.startMethPrice ? Number(r.startMethPrice) : 0
+  const settleMeth = r.settleMethPrice ? Number(r.settleMethPrice) : 0
+  const startUsdy = r.startUsdyPrice ? Number(r.startUsdyPrice) : 0
+  const settleUsdy = r.settleUsdyPrice ? Number(r.settleUsdyPrice) : 0
+
+  const methReturnBps = startMeth > 0 ? Math.round(((settleMeth - startMeth) / startMeth) * 10000) : 0
+  const usdyReturnBps = startUsdy > 0 ? Math.round(((settleUsdy - startUsdy) / startUsdy) * 10000) : 0
+
+  const aiBps = Number(r.aiReturnBps)
+  const baseBps = Number(r.humanReturnBps)
+  const alphaBps = aiBps - baseBps
+
+  const aiUsdImpact = (aiBps / 10000) * REFERENCE_TVL_USD
+  const baseUsdImpact = (baseBps / 10000) * REFERENCE_TVL_USD
+  const alphaUsd = aiUsdImpact - baseUsdImpact
+
+  const optimalAllocMeth = methReturnBps >= usdyReturnBps ? 100 : 0
+  const optimalReturnBps = optimalAllocMeth === 100 ? methReturnBps : usdyReturnBps
+
+  return (
+    <div className="px-5 py-4 border-b border-[var(--border)] bg-white/[0.015] text-xs space-y-4">
+      {/* Market move */}
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Market move during round</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">mETH</div>
+            <div className="flex items-baseline gap-2">
+              <span className="mono">{fmtPriceUsd(r.startMethPrice)}</span>
+              <span className="text-[var(--fg-dim)]">→</span>
+              <span className="mono">{fmtPriceUsd(r.settleMethPrice)}</span>
+              <span className={`mono ml-auto ${methReturnBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                {formatBps(methReturnBps)}
+              </span>
+            </div>
+          </div>
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">USDY</div>
+            <div className="flex items-baseline gap-2">
+              <span className="mono">{fmtPriceUsd(r.startUsdyPrice)}</span>
+              <span className="text-[var(--fg-dim)]">→</span>
+              <span className="mono">{fmtPriceUsd(r.settleUsdyPrice)}</span>
+              <span className={`mono ml-auto ${usdyReturnBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                {formatBps(usdyReturnBps)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Strategy comparison */}
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Strategy comparison</div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">Mensa AI</div>
+            <div className="text-sm mono mb-1">{r.aiAllocMeth}% mETH · {100 - r.aiAllocMeth}% USDY</div>
+            <div className={`mono ${aiBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+              {formatBps(aiBps)} <span className="text-[var(--fg-dim)]">({formatBpsRaw(aiBps)})</span>
+            </div>
+          </div>
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">Baseline 50/50</div>
+            <div className="text-sm mono mb-1">{r.humanAllocMeth}% mETH · {100 - r.humanAllocMeth}% USDY</div>
+            <div className={`mono ${baseBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+              {formatBps(baseBps)} <span className="text-[var(--fg-dim)]">({formatBpsRaw(baseBps)})</span>
+            </div>
+          </div>
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">Hindsight optimal</div>
+            <div className="text-sm mono mb-1">{optimalAllocMeth}% mETH · {100 - optimalAllocMeth}% USDY</div>
+            <div className={`mono ${optimalReturnBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+              {formatBps(optimalReturnBps)} <span className="text-[var(--fg-dim)]">({formatBpsRaw(optimalReturnBps)})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* $ Impact at reference TVL */}
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">
+          $ impact (if treasury held ${REFERENCE_TVL_USD.toLocaleString()})
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">AI return</div>
+            <div className={`text-sm mono ${aiUsdImpact >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+              {fmtUsd(aiUsdImpact)}
+            </div>
+          </div>
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">Baseline return</div>
+            <div className={`text-sm mono ${baseUsdImpact >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+              {fmtUsd(baseUsdImpact)}
+            </div>
+          </div>
+          <div className="card p-3" style={{ background: 'var(--bg-elevated)' }}>
+            <div className="text-[var(--fg-muted)] text-[10px] mb-1">Alpha (AI saved)</div>
+            <div className={`text-sm mono ${alphaUsd >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+              {fmtUsd(alphaUsd)} <span className="text-[var(--fg-dim)]">({formatBpsRaw(alphaBps)})</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-[10px] text-[var(--fg-dim)] mt-2">
+          Treasury TVL during this round: $0 (nobody had deposited yet). Numbers above show the {' '}
+          <span className="text-[var(--fg-muted)]">hypothetical</span> outcome if a $1k principal were active.
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function TournamentList() {
   const [rounds, setRounds] = useState<Round[]>([])
   const [stats, setStats] = useState<Stats>({ totalRounds: 0, aiWins: 0, humanWins: 0, aiWinRatePct: 0 })
   const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   useEffect(() => {
     fetch('/api/onchain')
@@ -60,22 +212,25 @@ export default function TournamentList() {
   }, [])
 
   const aiWinRate = stats.totalRounds > 0 ? stats.aiWinRatePct : 0
+  const alpha = stats.alpha
+  const alphaSign = alpha && alpha.alphaBps >= 0 ? '+' : ''
 
   return (
     <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${aiWinRate.toFixed(0)}%` : '—', accent: true },
-          { label: 'AI Wins', value: stats.aiWins },
-          { label: 'Human Wins', value: stats.humanWins },
-          { label: 'Total Rounds', value: stats.totalRounds },
-        ].map(({ label, value, accent }) => (
+          { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${aiWinRate.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L`, accent: true },
+          { label: 'Alpha Annualized', value: alpha && alpha.settledRounds > 0 ? `${alphaSign}${alpha.annualizedAlphaPct.toFixed(2)}%` : '—', detail: alpha && alpha.settledRounds > 0 ? `${alphaSign}${alpha.alphaBps} bps cum.` : 'building', accent: true },
+          { label: 'AI Wins', value: stats.aiWins, detail: 'on-chain' },
+          { label: 'Total Rounds', value: stats.totalRounds, detail: `${stats.totalRounds - stats.aiWins - stats.humanWins} pending` },
+        ].map(({ label, value, detail, accent }) => (
           <div key={label} className="card p-4">
             <div className={`text-2xl font-medium tracking-tight mono ${accent ? 'text-[var(--accent)]' : ''}`}>
               {loading ? '—' : value}
             </div>
             <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">{label}</div>
+            <div className="text-[10px] text-[var(--fg-dim)] mt-1">{detail}</div>
           </div>
         ))}
       </div>
@@ -85,7 +240,7 @@ export default function TournamentList() {
         <div className="card p-5">
           <div className="flex items-center justify-between text-xs text-[var(--fg-muted)] mb-2">
             <span>AI <span className="text-white mono">{stats.aiWins}</span></span>
-            <span>Human <span className="text-white mono">{stats.humanWins}</span></span>
+            <span>Baseline 50/50 <span className="text-white mono">{stats.humanWins}</span></span>
           </div>
           <div className="flex h-2 rounded-full overflow-hidden bg-[var(--border)]">
             <div className="bg-[var(--accent)]" style={{ width: `${aiWinRate}%` }} />
@@ -139,54 +294,68 @@ export default function TournamentList() {
         const settled = rounds.filter(r => r.settled)
         return (
           <div>
-            <h2 className="text-sm uppercase tracking-wider text-[var(--fg-muted)] mb-3">
-              Settled history
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm uppercase tracking-wider text-[var(--fg-muted)]">Settled history</h2>
+              <span className="text-[10px] text-[var(--fg-dim)]">click a row for details</span>
+            </div>
             {settled.length === 0 ? (
               <div className="card p-8 text-center">
                 <div className="text-sm text-[var(--fg-muted)]">No settled rounds yet.</div>
                 <div className="text-xs text-[var(--fg-dim)] mt-2">
                   Each round runs for 24h. Once a round&apos;s timer is up, anyone with the settler role
-                  can close it and the outcome (AI or Human win) is recorded here.
+                  can close it and the outcome is recorded here.
                 </div>
               </div>
             ) : (
               <div className="card overflow-hidden">
-                <div className="grid grid-cols-12 px-5 py-3 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
-                  <div className="col-span-1">Round</div>
-                  <div className="col-span-2">AI Alloc</div>
-                  <div className="col-span-2">Human Alloc</div>
-                  <div className="col-span-2">AI Return</div>
-                  <div className="col-span-2">Human Return</div>
-                  <div className="col-span-2">Winner</div>
-                  <div className="col-span-1 text-right">Status</div>
+                <div className="grid grid-cols-[40px_1fr_100px_100px_100px_80px] gap-3 px-5 py-3 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
+                  <div>Round</div>
+                  <div>AI Allocation</div>
+                  <div className="text-right">AI Return</div>
+                  <div className="text-right">Baseline</div>
+                  <div className="text-right">Alpha</div>
+                  <div className="text-right">Winner</div>
                 </div>
 
                 {settled.map((r) => {
-                  const outcome = OUTCOME_NAMES[r.outcome] || 'Pending'
-                  const aiReturn = Number(r.aiReturnBps) / 100
-                  const humanReturn = Number(r.humanReturnBps) / 100
+                  const aiBps = Number(r.aiReturnBps)
+                  const baseBps = Number(r.humanReturnBps)
+                  const alphaBps = aiBps - baseBps
+                  const isOpen = expandedId === r.id
+                  const winnerLabel = r.outcome === 1 ? 'AI' : r.outcome === 2 ? 'Baseline' : 'Tie'
 
                   return (
-                    <div
-                      key={r.id}
-                      className="grid grid-cols-12 px-5 py-3 border-b border-[var(--border)] last:border-b-0 text-sm hover:bg-white/[0.01] transition"
-                    >
-                      <div className="col-span-1 mono text-[var(--fg-muted)]">#{r.id}</div>
-                      <div className="col-span-2 mono">{r.aiAllocMeth}% mETH</div>
-                      <div className="col-span-2 mono text-[var(--fg-muted)]">{r.humanAllocMeth}% mETH</div>
-                      <div className={`col-span-2 mono ${aiReturn >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
-                        {formatBps(r.aiReturnBps)}
-                      </div>
-                      <div className={`col-span-2 mono ${humanReturn >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
-                        {formatBps(r.humanReturnBps)}
-                      </div>
-                      <div className="col-span-2">
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          outcome === 'AI' ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-white/5 text-white'
-                        }`}>{outcome}</span>
-                      </div>
-                      <div className="col-span-1 text-right text-xs text-[var(--fg-muted)]">Settled</div>
+                    <div key={r.id}>
+                      <button
+                        onClick={() => setExpandedId(isOpen ? null : r.id)}
+                        className="w-full grid grid-cols-[40px_1fr_100px_100px_100px_80px] gap-3 px-5 py-3 border-b border-[var(--border)] last:border-b-0 text-sm hover:bg-white/[0.02] transition text-left"
+                      >
+                        <div className="mono text-[var(--fg-muted)]">#{r.id}</div>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <AllocBar methPct={r.aiAllocMeth} />
+                          <span className="mono text-xs whitespace-nowrap">
+                            <span className="text-[var(--accent)]">{r.aiAllocMeth}%</span>
+                            <span className="text-[var(--fg-dim)]"> mETH · </span>
+                            <span className="text-white">{100 - r.aiAllocMeth}%</span>
+                            <span className="text-[var(--fg-dim)]"> USDY</span>
+                          </span>
+                        </div>
+                        <div className={`mono text-right ${aiBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                          {formatBps(aiBps)}
+                        </div>
+                        <div className={`mono text-right ${baseBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                          {formatBps(baseBps)}
+                        </div>
+                        <div className={`mono text-right text-xs ${alphaBps >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                          {formatBpsRaw(alphaBps)}
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-[10px] px-2 py-0.5 rounded ${
+                            r.outcome === 1 ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-white/5 text-white'
+                          }`}>{winnerLabel}</span>
+                        </div>
+                      </button>
+                      {isOpen && <RoundDetail r={r} />}
                     </div>
                   )
                 })}

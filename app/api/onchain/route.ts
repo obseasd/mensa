@@ -17,6 +17,8 @@ export async function GET() {
         ...r,
         startMethPrice: r.startMethPrice.toString(),
         startUsdyPrice: r.startUsdyPrice.toString(),
+        settleMethPrice: r.settleMethPrice.toString(),
+        settleUsdyPrice: r.settleUsdyPrice.toString(),
         aiReturnBps: r.aiReturnBps.toString(),
         humanReturnBps: r.humanReturnBps.toString(),
       })),
