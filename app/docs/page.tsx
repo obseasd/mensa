@@ -127,6 +127,94 @@ export default function DocsPage() {
           </div>
         </section>
 
+        {/* MVP scope & roadmap */}
+        <section className="mb-12">
+          <h2 className="text-lg font-medium mb-4">MVP scope & roadmap</h2>
+          <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
+            Mensa is a hackathon-stage prototype focused on the AI&apos;s
+            decision-making loop and the Turing tournament. The treasury layer is
+            intentionally minimal — production-ready features are listed below.
+          </p>
+
+          <div className="grid gap-3">
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Now</span>
+                <div className="text-sm font-medium">Notional rebalancing</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                <code className="text-[var(--fg)] mono">executeAllocation()</code> updates a target
+                allocation variable, opens a tournament round, and logs reasoning on-chain. It does
+                <span className="text-[var(--fg)]"> not</span> swap underlying tokens. The treasury holds
+                whatever assets users deposited; the AI&apos;s decision is measured against price moves
+                of mETH and USDY but no actual swap is executed.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] mt-2">
+                <span className="text-[var(--fg-muted)]">Why:</span> rebalancing on a single round
+                without slippage controls would be dangerous. Better to first prove the AI&apos;s
+                allocation calls beat baseline (which the alpha stat does), then add execution.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Now</span>
+                <div className="text-sm font-medium">Per-user balance tracker (not shares)</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                <code className="text-[var(--fg)] mono">userDeposits[address]</code> is a single
+                accumulator that doesn&apos;t distinguish mETH from USDY. The MVP is safe because TVL is
+                small / zero, but in a multi-user mainnet deployment a depositor of mETH could in theory
+                withdraw another user&apos;s USDY. Not exploited in the demo, but a known design gap.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mono shrink-0 mt-0.5">Next</span>
+                <div className="text-sm font-medium">ERC-4626 share model + real swap execution</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Replace the unified balance with shares minted at deposit and burned at withdraw,
+                proportional to USD value of the treasury at the time. Every depositor owns
+                a slice of the entire pool, regardless of asset composition.
+                <span className="text-[var(--fg)]"> executeAllocation</span> then routes a real swap via
+                Velora (mainnet) or Uniswap V3 (Sepolia) with slippage caps and a sanity check on
+                price. Both pieces are scaffolded — see the
+                {' '}<code className="text-[var(--fg)] mono">simulation.ts</code> module — and were
+                deferred to keep the demo focused on the AI loop.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mono shrink-0 mt-0.5">Next</span>
+                <div className="text-sm font-medium">Real human-vote aggregation in settle</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                The auto-settle script currently passes a fixed 50% as the human aggregate when no
+                voters showed up — which makes the &quot;Human&quot; column actually a 50/50 baseline.
+                Once voting picks up we&apos;ll compute the reputation-weighted average of votes
+                off-chain and pass that into <code className="text-[var(--fg)] mono">settleRound</code>.
+                Until then the tournament UI labels it as &quot;Baseline 50/50&quot; for honesty.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mono shrink-0 mt-0.5">Later</span>
+                <div className="text-sm font-medium">Hybrid AI / human steering</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Right now humans only score against the AI. A future iteration feeds the
+                reputation-weighted human consensus back into the next Claude call as a soft input,
+                turning Mensa into a hybrid where the AI learns from voters who consistently
+                outperform it.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Run locally */}
         <section className="mb-12">
           <h2 className="text-lg font-medium mb-4">Run locally</h2>

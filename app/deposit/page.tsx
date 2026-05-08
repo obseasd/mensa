@@ -33,6 +33,13 @@ export default function DepositPage() {
                 Smart contract risk applies — review the source on{' '}
                 <a href="https://github.com/obseasd/mensa" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)] underline">GitHub</a>.
               </p>
+              <p>
+                <strong className="text-[var(--fg-muted)]">MVP scope.</strong>{' '}
+                The agent&apos;s rebalance is currently <span className="text-[var(--fg-muted)]">notional</span>:
+                each <code className="mono">executeAllocation</code> updates the target % and opens a tournament round,
+                but does not swap underlying tokens yet. ERC-4626 shares + real swap routing are next.
+                See <a href="/docs#mvp-scope" className="hover:text-[var(--accent)] underline">/docs</a> for the full roadmap.
+              </p>
             </>
           ) : (
             <p>
