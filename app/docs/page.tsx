@@ -1,5 +1,6 @@
 import Nav from '@/components/Nav'
 import ArchitectureDiagram from '@/components/ArchitectureDiagram'
+import YieldProtocols from '@/components/YieldProtocols'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 
 const CONTRACTS = [
@@ -125,6 +126,19 @@ export default function DocsPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Mantle yield landscape */}
+        <section className="mb-12">
+          <h2 className="text-lg font-medium mb-2">Mantle yield landscape</h2>
+          <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
+            The broader DeFi yield universe Mensa monitors on Mantle. Today the agent
+            allocates only to <span className="text-[var(--fg)]">mETH</span> (liquid staking)
+            and <span className="text-[var(--fg)]">USDY</span> (T-bills). Aave, Lendle, and
+            Fluxion are listed for context — adding them to the allocation set is
+            gated on the share-model upgrade in the roadmap below. Click a pool for APY history.
+          </p>
+          <YieldProtocols />
         </section>
 
         {/* MVP scope & roadmap */}

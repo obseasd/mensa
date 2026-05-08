@@ -2,123 +2,92 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ethers } from 'ethers'
 
-interface Profile {
-  address: string
-  reputation: number
-  weight: number
-  totalVotes: number
-  correctVotes: number
-  winRatePct: number
-  badgeCount: number
-  claimableBounty: string
-}
-
-interface BountyStats {
-  totalCollected: string
-  totalDistributed: string
-  winnerPoolBalance: string
-}
-
-function shortAddr(addr: string) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+interface YieldContext {
+  methApr: number
+  usdyApr: number
+  methAllocPct: number
 }
 
 export default function LeaderboardSidebar() {
-  const [profiles, setProfiles] = useState<Profile[]>([])
-  const [bounty, setBounty] = useState<BountyStats | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [ctx, setCtx] = useState<YieldContext | null>(null)
 
   useEffect(() => {
-    fetch('/api/leaderboard')
-      .then(r => r.json())
-      .then(data => {
-        if (data.profiles) setProfiles(data.profiles)
-        if (data.bounty) setBounty(data.bounty)
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    fetch('/api/agent').then(r => r.json()).then(d => {
+      if (d?.marketSnapshot) {
+        setCtx({
+          methApr: Number(d.marketSnapshot.mETHYieldAPR ?? 0),
+          usdyApr: Number(d.marketSnapshot.usdyYieldAPR ?? 0),
+          methAllocPct: Number(d.marketSnapshot.currentMethAllocPct ?? 50),
+        })
+      }
+    }).catch(() => {})
   }, [])
 
   return (
     <div className="space-y-3 lg:sticky lg:top-6 lg:self-start">
-      {/* Bounty pool stat */}
-      {bounty && (
-        <div className="card p-4">
-          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
-            Bounty pool
+      {/* How rewards work */}
+      <div className="card p-5">
+        <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">
+          How rewards work
+        </div>
+        <div className="text-xs text-[var(--fg-muted)] leading-relaxed mb-4">
+          Mensa charges a 15% performance fee on yield, never on principal.
+          The fee is collected in MNT and routed to the bounty pool, then
+          split on every settlement:
+        </div>
+        <div className="space-y-2.5">
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-[var(--fg-muted)]">Round winners</span>
+            <span className="text-sm mono text-[var(--accent)]">50%</span>
           </div>
-          <div className="text-2xl font-medium tracking-tight mono mt-1">
-            {ethers.formatEther(bounty.winnerPoolBalance).slice(0, 8)} <span className="text-sm text-[var(--fg-muted)]">MNT</span>
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-[var(--fg-muted)]">Reputation pool</span>
+            <span className="text-sm mono">30%</span>
           </div>
-          <div className="text-[10px] text-[var(--fg-dim)] mt-1">
-            funded by 15% perf fee on yield
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[var(--border)] text-[10px]">
-            <div>
-              <div className="text-[var(--fg-muted)]">Collected</div>
-              <div className="mono mt-1">{ethers.formatEther(bounty.totalCollected).slice(0, 6)}</div>
-            </div>
-            <div>
-              <div className="text-[var(--fg-muted)]">Distributed</div>
-              <div className="mono mt-1">{ethers.formatEther(bounty.totalDistributed).slice(0, 6)}</div>
-            </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-[var(--fg-muted)]">Ops</span>
+            <span className="text-sm mono">20%</span>
           </div>
         </div>
-      )}
-
-      {/* Top humans */}
-      <div className="card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
-            Top humans
-          </div>
-          <span className="text-[10px] text-[var(--fg-dim)]">
-            {profiles.length} voter{profiles.length !== 1 ? 's' : ''}
-          </span>
+        <div className="text-[10px] text-[var(--fg-dim)] mt-4 pt-3 border-t border-[var(--border)] leading-relaxed">
+          Winners get paid pro-rata to <span className="mono">sqrt(reputation)</span> so
+          whales and bots can&apos;t dominate. Reputation pool unlocks to top
+          historical voters monthly.
         </div>
+      </div>
 
-        {loading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-12 bg-white/[0.02] rounded animate-pulse" />
-            ))}
-          </div>
-        ) : profiles.length === 0 ? (
-          <div className="text-center py-6">
-            <div className="text-xs text-[var(--fg-muted)]">No voters yet</div>
-            <Link href="/tournament" className="text-[10px] text-[var(--accent)] hover:underline mt-2 inline-block">
-              Be the first to challenge the AI →
-            </Link>
+      {/* Mensa earns from */}
+      <div className="card p-5">
+        <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">
+          Mensa earns from
+        </div>
+        {ctx ? (
+          <div className="space-y-2.5">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs text-[var(--fg-muted)]">mETH staking</span>
+              <span className="text-sm mono">{ctx.methApr.toFixed(2)}%</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs text-[var(--fg-muted)]">USDY T-bills</span>
+              <span className="text-sm mono">{ctx.usdyApr.toFixed(2)}%</span>
+            </div>
+            <div className="flex items-baseline justify-between pt-2 border-t border-[var(--border)] mt-2">
+              <span className="text-xs">Current blend</span>
+              <span className="text-sm mono text-[var(--accent)]">
+                {((ctx.methApr * ctx.methAllocPct + ctx.usdyApr * (100 - ctx.methAllocPct)) / 100).toFixed(2)}%
+              </span>
+            </div>
+            <div className="text-[10px] text-[var(--fg-dim)] mt-1">
+              at current {ctx.methAllocPct}% / {100 - ctx.methAllocPct}% split
+            </div>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {profiles.slice(0, 10).map((p, i) => (
-              <Link
-                key={p.address}
-                href={`/profile/${p.address}`}
-                className="flex items-center gap-2 px-2 py-2 rounded-md hover:bg-white/[0.02] transition"
-              >
-                <span className="text-[10px] text-[var(--fg-dim)] mono w-5">#{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs mono truncate">{shortAddr(p.address)}</div>
-                  <div className="text-[9px] text-[var(--fg-muted)]">
-                    rep <span className="text-white mono">{p.reputation}</span> · win{' '}
-                    <span className={p.winRatePct >= 50 ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'}>
-                      {p.winRatePct}%
-                    </span>
-                  </div>
-                </div>
-                {p.badgeCount > 0 && (
-                  <span className="text-[10px] text-[var(--accent)] mono">
-                    {p.badgeCount}★
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
+          <div className="text-xs text-[var(--fg-dim)]">Loading yields...</div>
         )}
+        <div className="text-[10px] text-[var(--fg-dim)] mt-4 pt-3 border-t border-[var(--border)] leading-relaxed">
+          Other Mantle protocols (Aave, Lendle, Fluxion) are monitored but not yet in the allocation set. See <Link href="/docs" className="text-[var(--fg-muted)] hover:text-[var(--accent)] underline">/docs</Link>.
+        </div>
       </div>
 
       {/* CTA */}
