@@ -14,7 +14,7 @@ interface BacktestChartProps {
 }
 
 const SERIES = [
-  { key: 'mensaCumBps' as const,    label: 'Mensa AI',     color: 'var(--accent)',          width: 2.5 },
+  { key: 'mensaCumBps' as const,    label: 'Mensa heuristic', color: 'var(--accent)',          width: 2.5 },
   { key: 'hold5050CumBps' as const, label: 'Passive 50/50', color: 'rgba(255,255,255,0.55)', width: 1.5 },
   { key: 'allMethCumBps' as const,  label: '100% mETH',     color: '#fbbf24',                 width: 1 },
   { key: 'allUsdyCumBps' as const,  label: '100% USDY',     color: '#7c8ca8',                 width: 1 },

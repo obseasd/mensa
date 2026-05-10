@@ -82,9 +82,9 @@ export default function BacktestPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-medium tracking-tight mb-2">Backtest</h1>
           <p className="text-sm text-[var(--fg-muted)] max-w-2xl">
-            Mensa&apos;s allocation strategy replayed on real historical ETH prices vs three baselines:
-            passive 50/50 hold, all mETH, all USDY. Six on-chain rounds isn&apos;t a track record —
-            this is.
+            Compare four allocation strategies on real historical ETH prices: a Mensa-style
+            heuristic (momentum + spread + smoothing), passive 50/50 hold, all mETH, all USDY.
+            What you&apos;re looking at is risk-adjusted tradeoffs — not a victory lap.
           </p>
         </div>
 
@@ -123,39 +123,45 @@ export default function BacktestPage() {
 
         {result && !loading && (
           <div className="space-y-6">
-            {/* Headline alpha */}
-            <div className="card p-6">
-              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-2">
-                    Mensa alpha vs passive 50/50 — {result.days} days
+            {/* Headline strategy comparison */}
+            {(() => {
+              const ddRedVsHodl = result.summary.allMeth.maxDrawdownBps - result.summary.mensa.maxDrawdownBps
+              const retGapVsHodl = result.summary.allMeth.finalReturnBps - result.summary.mensa.finalReturnBps
+              return (
+                <div className="card p-6">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">
+                    Strategy comparison — {result.days} days
                   </div>
-                  <div className="flex items-baseline gap-3">
-                    <div
-                      className="text-4xl font-medium tracking-tight mono"
-                      style={{ color: result.summary.alphaVsBaseline >= 0 ? 'var(--accent)' : '#ef4444' }}
-                    >
-                      {fmtBps(result.summary.alphaVsBaseline)}
-                    </div>
-                    <div className="text-xs text-[var(--fg-muted)]">
-                      {result.summary.annualizedAlphaPct >= 0 ? '+' : ''}
-                      {result.summary.annualizedAlphaPct.toFixed(2)}% annualized
-                    </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { name: 'Mensa heuristic', ret: result.summary.mensa.finalReturnBps, dd: result.summary.mensa.maxDrawdownBps, color: 'var(--accent)' },
+                      { name: 'Passive 50/50', ret: result.summary.hold5050.finalReturnBps, dd: result.summary.hold5050.maxDrawdownBps, color: 'rgba(255,255,255,0.7)' },
+                      { name: '100% mETH', ret: result.summary.allMeth.finalReturnBps, dd: result.summary.allMeth.maxDrawdownBps, color: '#fbbf24' },
+                      { name: '100% USDY', ret: result.summary.allUsdy.finalReturnBps, dd: result.summary.allUsdy.maxDrawdownBps, color: '#7c8ca8' },
+                    ].map(s => (
+                      <div key={s.name}>
+                        <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: s.color }}>{s.name}</div>
+                        <div className={`text-2xl font-medium mono ${s.ret >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>{fmtBps(s.ret)}</div>
+                        <div className="text-[10px] text-[var(--fg-dim)] mt-1">max DD <span className="mono text-[var(--fg-muted)]">-{(s.dd / 100).toFixed(2)}%</span></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-xs text-[var(--fg-muted)] mt-5 pt-4 border-t border-[var(--border)] leading-relaxed">
+                    Reading the result: the Mensa heuristic captured{' '}
+                    <span className="text-white mono">
+                      {retGapVsHodl > 0 ? `−${(retGapVsHodl / 100).toFixed(2)}%` : `+${Math.abs(retGapVsHodl / 100).toFixed(2)}%`}
+                    </span>{' '}
+                    less return than 100% mETH HODL but with{' '}
+                    <span className="text-white mono">
+                      {ddRedVsHodl > 0 ? `−${(ddRedVsHodl / 100).toFixed(2)}%` : `+${Math.abs(ddRedVsHodl / 100).toFixed(2)}%`}
+                    </span>{' '}
+                    less max drawdown — risk-adjusted, that&apos;s the trade. In a strong directional bull
+                    market, allocation strategies almost always lag pure HODL; Mensa&apos;s value prop is
+                    chop and bear regimes, not bull tops.
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-1">
-                    Win rate vs baseline
-                  </div>
-                  <div className="text-2xl font-medium mono">
-                    {result.summary.winRateVs5050}%
-                  </div>
-                  <div className="text-[10px] text-[var(--fg-dim)] mt-1">
-                    of days mensa &gt; 50/50
-                  </div>
-                </div>
-              </div>
-            </div>
+              )
+            })()}
 
             {/* Chart */}
             <div className="card p-5">
@@ -168,7 +174,7 @@ export default function BacktestPage() {
             {/* Per-strategy stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { name: 'Mensa AI', stats: result.summary.mensa, color: 'var(--accent)' },
+                { name: 'Mensa heuristic', stats: result.summary.mensa, color: 'var(--accent)' },
                 { name: 'Passive 50/50', stats: result.summary.hold5050, color: 'rgba(255,255,255,0.7)' },
                 { name: '100% mETH', stats: result.summary.allMeth, color: '#fbbf24' },
                 { name: '100% USDY', stats: result.summary.allUsdy, color: '#7c8ca8' },
@@ -211,12 +217,22 @@ export default function BacktestPage() {
                   4% APY. USDY price compounds at 4.5% APY from $1.00 at t=0.
                 </p>
                 <p>
-                  <span className="text-white">Mensa&apos;s decision rule</span> in this backtest is a
-                  deterministic heuristic that mimics what Claude does live: tilts allocation based
-                  on 7-day and 30-day ETH momentum + the structural mETH-vs-USDY yield spread,
-                  clamped to <code className="text-white mono">[10%, 90%]</code>, with a 10-percentage-point
-                  minimum threshold to avoid churn. We don&apos;t call Claude N times for the
-                  backtest — same logic, deterministic execution, no API spend.
+                  <span className="text-white">The Mensa heuristic</span> in this backtest is a
+                  deterministic momentum + spread + smoothing rule, clamped to{' '}
+                  <code className="text-white mono">[10%, 90%]</code> with a 10-percentage-point
+                  threshold to avoid churn. It captures the <em>shape</em> of Claude&apos;s live
+                  decision-making but not its memory loop or qualitative judgment.{' '}
+                  <span className="text-white">Live Mensa is different</span>: it reads its own
+                  on-chain track record into every Claude prompt, which means the live agent
+                  adapts in ways the static rule cannot. Calling Claude N times here would burn
+                  API spend without a fair comparison — we&apos;ll publish a Claude-driven backtest
+                  separately.
+                </p>
+                <p>
+                  <span className="text-white">Reading the result honestly</span>: in a strong directional
+                  market (e.g. ETH +15% over 90d), pure HODL almost always wins. Allocation strategies
+                  trade some upside for downside protection. The right comparison is risk-adjusted —
+                  look at max drawdown alongside final return.
                 </p>
                 <p>
                   <span className="text-white">No lookahead.</span> Each day&apos;s allocation
