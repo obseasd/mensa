@@ -22,6 +22,24 @@ const CONTRACTS = [
     role: 'The Turing Test mechanic. Each round opens with the AI\'s allocation snapshot. Anyone can vote with their human allocation. After settlement, performance is computed on-chain and outcome (AI_WINS / HUMAN_WINS / TIE) recorded.',
     risk: 'Settler role can settle rounds and supply human allocation aggregate. In production, this would use a price oracle and a median of human votes.',
   },
+  {
+    name: 'Reputation',
+    addr: ACTIVE_CHAIN.contracts.reputation,
+    role: 'Tracks each voter\'s on-chain history: total votes, correct votes (rounds they beat the AI), reputation score, first-participation timestamp. Read by TournamentVault to compute sqrt-weighted vote weight.',
+    risk: 'Only TournamentVault can update scores. Sqrt weighting caps the influence of any single account, mitigating Sybil attacks and whale dominance.',
+  },
+  {
+    name: 'BountyPool',
+    addr: ACTIVE_CHAIN.contracts.bountyPool,
+    role: 'Receives 15% of yield as performance fee from MensaAgent. On each settled round, distributes a share to humans who outperformed the AI. Split: 50% to round winners, 30% to a reputation pool (top monthly), 20% to ops.',
+    risk: 'Pull-based claim pattern (no push transfers) — winners must claim, no reentrancy surface. Only MensaAgent funds it; only TournamentVault triggers payouts.',
+  },
+  {
+    name: 'MensaBadges',
+    addr: ACTIVE_CHAIN.contracts.badges,
+    role: 'Soulbound (non-transferable) ERC-721 badges minted automatically on milestones: First Vote, Beat AI 10x, Beat AI 100x, 5-Win Streak, Reputation 500, Reputation 1000, Top 10 Monthly.',
+    risk: 'Transfer functions disabled (transfer reverts). Only TournamentVault can mint. No admin burn.',
+  },
 ]
 
 const STACK = [
@@ -142,7 +160,7 @@ export default function DocsPage() {
         </section>
 
         {/* MVP scope & roadmap */}
-        <section className="mb-12">
+        <section className="mb-12" id="mvp-scope">
           <h2 className="text-lg font-medium mb-4">MVP scope & roadmap</h2>
           <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
             Mensa is a hackathon-stage prototype focused on the AI&apos;s
@@ -246,11 +264,14 @@ npm run dev
 cd contracts
 forge install
 forge test
-# 10/10 passing
 
-# Deploy (testnet)
+# Deploy to Mantle Mainnet
 PRIVATE_KEY=0x... forge script script/Deploy.s.sol:Deploy \\
-  --rpc-url mantle_sepolia --broadcast --legacy`}
+  --rpc-url https://rpc.mantle.xyz --broadcast --legacy
+
+# Run a single agent cycle (or set up GH Actions cron)
+ANTHROPIC_API_KEY=sk-ant-... PRIVATE_KEY=0x... \\
+  node scripts/agent-loop.mjs --once`}
           </div>
         </section>
       </main>
