@@ -33,7 +33,91 @@ const TOURNAMENT_ABI = [
   'function rounds(uint256) view returns (uint256 id, uint64 startTime, uint64 settlementTime, uint256 startMethPrice, uint256 startUsdyPrice, uint256 settleMethPrice, uint256 settleUsdyPrice, uint8 aiAllocMeth, uint8 humanAllocMeth, int256 aiReturnBps, int256 humanReturnBps, uint8 outcome, bool settled)',
   'function settleRound(uint256 roundId, uint256 settleMethPrice, uint256 settleUsdyPrice, uint8 aggregateHumanAlloc) external',
   'function getVotersCount(uint256) view returns (uint256)',
+  'function roundVoters(uint256, uint256) view returns (address)',
+  'function votes(uint256, address) view returns (uint8 allocMeth, uint256 weight, uint256 timestamp)',
 ]
+
+/// Read recent settled rounds and compute reputation-weighted human consensus.
+/// Returns null if no real human votes (auto-settle defaults are excluded so
+/// we don't loop the AI's own 50% baseline back into its prompt).
+async function fetchHumanConsensus(provider) {
+  try {
+    const t = new ethers.Contract(TOURNAMENT_ADDR, TOURNAMENT_ABI, provider)
+    const total = Number(await t.totalRounds())
+    if (total === 0) return null
+    const ids = Array.from({ length: Math.min(20, total) }, (_, i) => total - i)
+    const rounds = await Promise.all(ids.map(id => t.rounds(id)))
+
+    let totalWeightedAlloc = 0n
+    let totalWeight = 0n
+    let voterCount = 0
+    let winningAllocs = [] // allocations of voters who beat the AI in this round
+
+    for (const r of rounds) {
+      if (!r.settled) continue
+      const id = Number(r.id)
+      const numVoters = Number(await t.getVotersCount(id))
+      if (numVoters === 0) continue
+      // AI return for win comparison (we don't need AI alloc here)
+      const aiBps = Number(r.aiReturnBps)
+      // Compute mETH/USDY return from prices
+      const sm = Number(r.startMethPrice), em = Number(r.settleMethPrice)
+      const su = Number(r.startUsdyPrice), eu = Number(r.settleUsdyPrice)
+      if (sm === 0 || su === 0) continue
+      const methBps = Math.round(((em - sm) / sm) * 10000)
+      const usdyBps = Math.round(((eu - su) / su) * 10000)
+
+      // Read each voter's allocation + weight
+      const voterAddrs = await Promise.all(
+        Array.from({ length: numVoters }, (_, i) => t.roundVoters(id, i))
+      )
+      for (const addr of voterAddrs) {
+        const v = await t.votes(id, addr)
+        const alloc = Number(v.allocMeth)
+        const weight = BigInt(v.weight)
+        if (weight === 0n) continue
+        totalWeightedAlloc += BigInt(alloc) * weight
+        totalWeight += weight
+        voterCount++
+        // Did this voter beat the AI?
+        const voterBps = Math.round((alloc * methBps + (100 - alloc) * usdyBps) / 100)
+        if (voterBps > aiBps) winningAllocs.push({ alloc, gain: voterBps - aiBps, round: id })
+      }
+    }
+
+    if (voterCount === 0 || totalWeight === 0n) return null
+
+    const repWeightedAvg = Number(totalWeightedAlloc / totalWeight)
+    return {
+      voterCount,
+      repWeightedAllocPct: repWeightedAvg,
+      winningVotes: winningAllocs.sort((a, b) => b.gain - a.gain).slice(0, 5),
+    }
+  } catch (e) {
+    console.error('[human-consensus] fetch failed:', e.message)
+    return null
+  }
+}
+
+function formatHumanConsensus(consensus) {
+  if (!consensus) {
+    return 'Human consensus: No real human votes yet on settled rounds. Operate on first principles.'
+  }
+  const lines = [
+    `Human consensus from ${consensus.voterCount} settled vote${consensus.voterCount > 1 ? 's' : ''} (sqrt-rep weighted):`,
+    `  Reputation-weighted average human allocation: ${consensus.repWeightedAllocPct}% mETH`,
+  ]
+  if (consensus.winningVotes.length > 0) {
+    lines.push('')
+    lines.push('Top human votes that beat you (consider their reasoning patterns):')
+    for (const w of consensus.winningVotes) {
+      lines.push(`  Round #${w.round}: human picked ${w.alloc}% mETH and beat you by ${w.gain}bps`)
+    }
+  }
+  lines.push('')
+  lines.push('Treat this as soft input. If you disagree, say so in your reasoning. If you agree, you can incorporate it into your allocation.')
+  return lines.join('\n')
+}
 
 // Walk recent rounds and settle any whose 24h timer has expired.
 // Uses current market prices for the settle and a 50% default for human
@@ -189,7 +273,7 @@ async function fetchMarketState(currentMeth) {
   }
 }
 
-async function decideWithClaude(state, apiKey, trackRecord) {
+async function decideWithClaude(state, apiKey, trackRecord, humanConsensus) {
   const client = new Anthropic({ apiKey })
   const userMessage = `Current market state:
 
@@ -208,6 +292,8 @@ Treasury:
 Spread (mETH APR - USDY APR): ${(state.methYieldAPR - state.usdyYieldAPR).toFixed(2)}pp
 
 ${trackRecord}
+
+${humanConsensus}
 
 Make your allocation decision. Respond with JSON only.`
 
@@ -275,13 +361,15 @@ async function runOnce(agent) {
   }
 
   const trackRecord = await fetchTrackRecord(agent.runner.provider)
-  console.log(`---\n${trackRecord}\n---`)
+  const consensus = await fetchHumanConsensus(agent.runner.provider)
+  const humanConsensusText = formatHumanConsensus(consensus)
+  console.log(`---\n${trackRecord}\n---\n${humanConsensusText}\n---`)
 
   let decision
   let source
   if (apiKey) {
     try {
-      decision = await decideWithClaude(state, apiKey, trackRecord)
+      decision = await decideWithClaude(state, apiKey, trackRecord, humanConsensusText)
       source = 'claude'
     } catch (e) {
       console.error(`[${new Date().toISOString()}] Claude failed, using heuristic: ${e.message}`)

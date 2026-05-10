@@ -4,6 +4,7 @@ import AgentLive from '@/components/AgentLive'
 import OnChainStats from '@/components/OnChainStats'
 import HomeTournamentFeed from '@/components/HomeTournamentFeed'
 import AllocationBar from '@/components/AllocationBar'
+import Tooltip, { GLOSSARY } from '@/components/Tooltip'
 
 export default function Home() {
   return (
@@ -23,11 +24,19 @@ export default function Home() {
             that proves itself.
           </h1>
 
-          <p className="text-lg text-[var(--fg-muted)] leading-relaxed max-w-2xl mb-8">
-            Mensa allocates your funds across mETH and USDY on Mantle, then
-            competes against humans to prove every decision. Every choice is
-            explained, logged on-chain, and challenged.
+          <p className="text-lg text-[var(--fg-muted)] leading-relaxed max-w-2xl mb-6">
+            Mensa allocates your funds across <Tooltip content={GLOSSARY.mETH}>mETH</Tooltip> and{' '}
+            <Tooltip content={GLOSSARY.USDY}>USDY</Tooltip> on Mantle, then competes against humans
+            in a <Tooltip content={GLOSSARY.tournament}>tournament</Tooltip> to prove every decision.
+            Every choice is explained, logged on-chain, and challenged.
           </p>
+
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--fg-dim)] mb-8">
+            <span className="text-[var(--fg-muted)]">Built for</span>
+            <span className="px-2 py-0.5 rounded border border-[var(--border)]">DAO treasuries</span>
+            <span className="px-2 py-0.5 rounded border border-[var(--border)]">Sophisticated DeFi savers</span>
+            <span className="px-2 py-0.5 rounded border border-[var(--border)]">RWA-backed protocols</span>
+          </div>
 
           <div className="flex items-center gap-3 mb-12">
             <Link href="/deposit" className="btn-accent">Try with $1 USDY</Link>

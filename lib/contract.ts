@@ -160,6 +160,73 @@ export async function getAlphaStats(limit = 20, skipRoundIds: number[] = []): Pr
   }
 }
 
+export interface HumanConsensus {
+  voterCount: number
+  repWeightedAllocPct: number
+  winningVotes: Array<{ alloc: number; gain: number; round: number }>
+}
+
+const TOURNAMENT_FULL_ABI = [
+  ...TOURNAMENT_ABI,
+  'function roundVoters(uint256, uint256) view returns (address)',
+  'function votes(uint256, address) view returns (uint8 allocMeth, uint256 weight, uint256 timestamp)',
+]
+
+/// Reputation-weighted human consensus from recent settled rounds.
+/// Returns null if no real human votes exist (so we don't loop the
+/// auto-settle 50% baseline back as if it were human input).
+export async function getHumanConsensus(limit = 20): Promise<HumanConsensus | null> {
+  try {
+    const provider = getProvider()
+    const t = new ethers.Contract(ACTIVE_CHAIN.contracts.tournamentVault, TOURNAMENT_FULL_ABI, provider)
+    const total = Number(await t.totalRounds())
+    if (total === 0) return null
+    const ids = Array.from({ length: Math.min(limit, total) }, (_, i) => total - i)
+    const rounds = await Promise.all(ids.map(id => t.rounds(id)))
+
+    let totalWeightedAlloc = BigInt(0)
+    let totalWeight = BigInt(0)
+    let voterCount = 0
+    const winningVotes: HumanConsensus['winningVotes'] = []
+
+    for (const r of rounds) {
+      if (!r.settled) continue
+      const id = Number(r.id)
+      const numVoters = Number(await t.getVotersCount(id))
+      if (numVoters === 0) continue
+      const aiBps = Number(r.aiReturnBps)
+      const sm = Number(r.startMethPrice), em = Number(r.settleMethPrice)
+      const su = Number(r.startUsdyPrice), eu = Number(r.settleUsdyPrice)
+      if (sm === 0 || su === 0) continue
+      const methBps = Math.round(((em - sm) / sm) * 10000)
+      const usdyBps = Math.round(((eu - su) / su) * 10000)
+
+      const voterAddrs = await Promise.all(
+        Array.from({ length: numVoters }, (_, i) => t.roundVoters(id, i))
+      )
+      for (const addr of voterAddrs) {
+        const v = await t.votes(id, addr)
+        const alloc = Number(v.allocMeth)
+        const weight = BigInt(v.weight)
+        if (weight === BigInt(0)) continue
+        totalWeightedAlloc += BigInt(alloc) * weight
+        totalWeight += weight
+        voterCount++
+        const voterBps = Math.round((alloc * methBps + (100 - alloc) * usdyBps) / 100)
+        if (voterBps > aiBps) winningVotes.push({ alloc, gain: voterBps - aiBps, round: id })
+      }
+    }
+    if (voterCount === 0 || totalWeight === BigInt(0)) return null
+    return {
+      voterCount,
+      repWeightedAllocPct: Number(totalWeightedAlloc / totalWeight),
+      winningVotes: winningVotes.sort((a, b) => b.gain - a.gain).slice(0, 5),
+    }
+  } catch {
+    return null
+  }
+}
+
 async function fetchEthPriceUsd(): Promise<number> {
   try {
     const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd', { next: { revalidate: 60 } })

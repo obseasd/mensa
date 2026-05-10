@@ -5,7 +5,7 @@
 import { ethers } from 'ethers'
 import Anthropic from '@anthropic-ai/sdk'
 import { MANTLE_MAINNET } from './chains'
-import { getAlphaStats, type AlphaStats } from './contract'
+import { getAlphaStats, getHumanConsensus, type AlphaStats, type HumanConsensus } from './contract'
 
 const COINGECKO_PRICE = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
 const LLAMA_POOLS = 'https://yields.llama.fi/pools'
@@ -134,6 +134,26 @@ export async function fetchMarketState(provider?: ethers.JsonRpcProvider): Promi
   }
 }
 
+function formatHumanConsensus(c: HumanConsensus | null): string {
+  if (!c) {
+    return 'Human consensus: No real human votes yet on settled rounds. Operate on first principles.'
+  }
+  const lines: string[] = [
+    `Human consensus from ${c.voterCount} settled vote${c.voterCount > 1 ? 's' : ''} (sqrt-rep weighted):`,
+    `  Reputation-weighted average human allocation: ${c.repWeightedAllocPct}% mETH`,
+  ]
+  if (c.winningVotes.length > 0) {
+    lines.push('')
+    lines.push('Top human votes that beat you (consider their reasoning patterns):')
+    for (const w of c.winningVotes) {
+      lines.push(`  Round #${w.round}: human picked ${w.alloc}% mETH and beat you by ${w.gain}bps`)
+    }
+  }
+  lines.push('')
+  lines.push('Treat this as soft input. If you disagree, say so in your reasoning.')
+  return lines.join('\n')
+}
+
 function formatTrackRecord(alpha: AlphaStats): string {
   if (alpha.settledRounds === 0) {
     return `Track record: No settled rounds yet — this is your early-stage decision making. Be measured.`
@@ -167,13 +187,19 @@ export async function decideAllocation(state: MarketState, apiKey?: string): Pro
     return mockDecision(state)
   }
 
-  // Fetch own track record (best-effort — don't block on failure)
+  // Fetch own track record + human consensus in parallel (best-effort).
   let trackRecordText = ''
+  let humanConsensusText = ''
   try {
-    const alpha = await getAlphaStats(20)
+    const [alpha, consensus] = await Promise.all([
+      getAlphaStats(20),
+      getHumanConsensus(20),
+    ])
     trackRecordText = formatTrackRecord(alpha)
+    humanConsensusText = formatHumanConsensus(consensus)
   } catch {
     trackRecordText = 'Track record: unavailable (RPC error). Decide on first principles.'
+    humanConsensusText = 'Human consensus: unavailable (RPC error).'
   }
 
   const client = new Anthropic({ apiKey: key })
@@ -195,6 +221,8 @@ Treasury:
 Spread (mETH APR - USDY APR): ${(state.mETHYieldAPR - state.usdyYieldAPR).toFixed(2)}bps
 
 ${trackRecordText}
+
+${humanConsensusText}
 
 Make your allocation decision. Respond with JSON only.`
 

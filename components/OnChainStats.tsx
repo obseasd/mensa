@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Tooltip, { GLOSSARY } from './Tooltip'
 
 interface Alpha {
   settledRounds: number
@@ -55,22 +56,24 @@ export default function OnChainStats() {
     ? `${alphaSign}${(a!.perRoundAvgAlphaBps).toFixed(0)} bps / round · ${a!.settledRounds} settled`
     : 'building track record'
 
-  const items = [
-    { label: 'TVL', value: formatTvl(stats.tvlUsd), detail: 'mETH + USDY in agent' },
+  const items: Array<{ label: string; value: string; detail: string; term?: keyof typeof GLOSSARY }> = [
+    { label: 'TVL', value: formatTvl(stats.tvlUsd), detail: 'mETH + USDY in agent', term: 'TVL' },
     { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L of ${stats.totalRounds} rounds` },
-    { label: 'Alpha vs 50/50', value: alphaValue, detail: alphaDetail },
+    { label: 'Alpha vs 50/50', value: alphaValue, detail: alphaDetail, term: 'alpha' },
   ]
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-      {items.map(({ label, value, detail }, i) => (
+      {items.map(({ label, value, detail, term }, i) => (
         <div
           key={label}
           className="card p-4 stat-card"
           style={{ animationDelay: `${i * 80}ms` }}
         >
           <div className={`text-2xl font-medium tracking-tight mono transition-opacity duration-300 ${loading ? 'opacity-40' : 'opacity-100'}`}>{value}</div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">{label}</div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">
+            {term ? <Tooltip content={GLOSSARY[term]} side="bottom">{label}</Tooltip> : label}
+          </div>
           <div className="text-[10px] text-[var(--fg-dim)] mt-1">{detail}</div>
         </div>
       ))}

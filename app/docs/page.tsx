@@ -194,6 +194,60 @@ export default function DocsPage() {
           </div>
         </section>
 
+        {/* Compliance & target users */}
+        <section className="mb-12">
+          <h2 className="text-lg font-medium mb-4">Compliance posture</h2>
+          <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
+            Mensa is a non-custodial smart-contract treasury. The protocol itself
+            doesn&apos;t collect or hold off-chain user data, but RWAs come with
+            jurisdictional rails. How we think about it:
+          </p>
+
+          <div className="grid gap-3">
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">Asset-side (USDY) compliance is upstream</div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Ondo&apos;s USDY is itself KYC-gated at issuance — only whitelisted addresses can
+                receive newly-minted USDY directly from Ondo. Mensa never mints USDY; we accept it
+                from depositors who already hold it. The KYC perimeter sits with Ondo, not us,
+                which is the standard pattern for DeFi protocols composing with permissioned RWAs.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">Sanctions screening (next)</div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                For institutional adoption we&apos;d wire a sanctions hook into{' '}
+                <code className="text-[var(--fg)] mono">deposit()</code> and{' '}
+                <code className="text-[var(--fg)] mono">withdraw()</code> that consults Chainalysis
+                Oracle (or equivalent) and reverts on hits. Cost: ~30k gas per call on Mantle, a few
+                cents. Designed but not yet wired into the MVP contract.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">Geo-fencing at the frontend (next)</div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                The smart contracts are jurisdiction-neutral, but the frontend can refuse to render
+                deposit UI for IPs in restricted regions (US persons for unregistered RWAs, etc.).
+                Cloudflare Workers / Vercel Edge config — standard pattern, deferred until we have
+                a real go-to-market plan.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">Audit & disclosure</div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Source is open under MIT.{' '}
+                <a href="https://github.com/obseasd/mensa" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">GitHub repo</a>{' '}
+                with Foundry tests. All 6 contracts verified on Mantlescan (linked in the Contracts
+                section above). A formal audit by a Web3 audit firm (Spearbit / Trail of Bits / Macro)
+                is part of any production launch checklist — not done at hackathon stage.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Mantle yield landscape */}
         <section className="mb-12">
           <h2 className="text-lg font-medium mb-2">Mantle yield landscape</h2>

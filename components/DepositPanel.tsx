@@ -5,6 +5,7 @@ import { useAccount, useChainId, useWriteContract, useReadContract, useWaitForTr
 import { parseUnits, formatUnits } from 'viem'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 import { mantle, mantleSepolia } from '@/lib/wagmi'
+import Tooltip, { GLOSSARY } from './Tooltip'
 
 const ERC20_ABI = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'a', type: 'address' }], outputs: [{ type: 'uint256' }] },
@@ -449,8 +450,12 @@ export default function DepositPanel() {
 
         {/* Fee disclosure */}
         <div className="text-[10px] text-[var(--fg-dim)] leading-relaxed pt-2 border-t border-[var(--border)]">
-          Mensa charges a <span className="text-[var(--fg-muted)]">15% performance fee</span> on yield generated
-          (never on principal). Fees fund the bounty pool that pays humans who out-allocate the AI in tournaments.
+          Mensa charges a{' '}
+          <Tooltip content={GLOSSARY.perfFee} side="top">
+            <span className="text-[var(--fg-muted)]">15% performance fee</span>
+          </Tooltip>{' '}
+          on yield generated (never on principal). Fees fund the bounty pool that pays humans who
+          out-allocate the AI in tournaments.
         </div>
 
         {isSuccess && (step === 'depositing' || step === 'withdrawing') && (

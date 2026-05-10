@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Tooltip, { GLOSSARY } from './Tooltip'
 
 interface YieldContext {
   methApr: number
@@ -51,8 +52,11 @@ export default function LeaderboardSidebar() {
           </div>
         </div>
         <div className="text-[10px] text-[var(--fg-dim)] mt-4 pt-3 border-t border-[var(--border)] leading-relaxed">
-          Winners get paid pro-rata to <span className="mono">sqrt(reputation)</span> so
-          whales and bots can&apos;t dominate. Reputation pool unlocks to top
+          Winners get paid pro-rata to{' '}
+          <Tooltip content={GLOSSARY.sqrtRep} side="top">
+            <span className="mono">sqrt(reputation)</span>
+          </Tooltip>{' '}
+          so whales and bots can&apos;t dominate. Reputation pool unlocks to top
           historical voters monthly.
         </div>
       </div>

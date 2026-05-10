@@ -2,11 +2,22 @@
 
 **The AI treasury that proves itself.**
 
-An autonomous AI treasury agent on Mantle. Allocates funds across mETH and USDY based on real on-chain yields, then competes against humans on identical inputs to prove every decision. All reasoning is logged on-chain.
+[![Mantle Mainnet](https://img.shields.io/badge/deployed-Mantle%20Mainnet-A3BAB9?style=flat-square)](https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49)
+[![Contracts verified](https://img.shields.io/badge/contracts-6%2F6%20verified-A3BAB9?style=flat-square)](https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code)
+[![License: MIT](https://img.shields.io/badge/license-MIT-white?style=flat-square)](LICENSE)
+[![Built for Mantle Turing Test](https://img.shields.io/badge/hackathon-Mantle%20Turing%20Test%202026-white?style=flat-square)](https://dorahacks.io/hackathon/mantleturingtesthackathon2026/)
 
-Built for the [Mantle Turing Test Hackathon 2026](https://dorahacks.io/hackathon/mantleturingtesthackathon2026/).
+Mensa is an **intelligent RWA portfolio management agent** on Mantle. It allocates user-deposited funds between **mETH** (Mantle liquid-staked ETH) and **USDY** (Ondo tokenized US Treasury bills), with every decision:
 
-**Live demo:** https://mensa-mu.vercel.app
+- Made by Claude Haiku 4.5 reading live market state + the agent's own track record
+- Logged on-chain in plain English via `DecisionLog`
+- Settled on-chain by the `TournamentVault`, where humans can challenge the AI on identical inputs and earn bounty if they outperform
+
+> The hackathon is called "Turing Test." Mensa takes it literally: the AI must prove, on-chain, that it allocates better than humans on the same data.
+
+**Live demo:** https://mensa-mu.vercel.app · **Pages:** Agent · Tournament · Backtest · Deposit · Leaderboard · Docs
+
+**Built for:** DAO treasuries · Sophisticated DeFi savers · RWA-backed protocols
 
 ---
 
@@ -23,18 +34,22 @@ The hackathon is called "Turing Test." Mensa takes the name literally: the AI mu
 
 ---
 
-## Live state (Mantle Sepolia)
+## Live state (Mantle Mainnet, all 6/6 contracts verified)
 
 | Component | Address |
 |-----------|---------|
-| MensaAgent | [`0x0B1018150C18dF5EB453Baa25a169884069AA81F`](https://explorer.sepolia.mantle.xyz/address/0x0B1018150C18dF5EB453Baa25a169884069AA81F) |
-| DecisionLog | [`0x32f6911E8bb653d9B4210748972F8EbF3651ef85`](https://explorer.sepolia.mantle.xyz/address/0x32f6911E8bb653d9B4210748972F8EbF3651ef85) |
-| TournamentVault | [`0xE0C0088acaD843e07Ceb77338fF1eC49979Be5f2`](https://explorer.sepolia.mantle.xyz/address/0xE0C0088acaD843e07Ceb77338fF1eC49979Be5f2) |
-| Reputation | [`0xb431a54b5801c5278D64ED38e1a7b31585560992`](https://explorer.sepolia.mantle.xyz/address/0xb431a54b5801c5278D64ED38e1a7b31585560992) |
-| BountyPool | [`0x597ef1750d0d83d8764dB5B62be0F1f1F13f9313`](https://explorer.sepolia.mantle.xyz/address/0x597ef1750d0d83d8764dB5B62be0F1f1F13f9313) |
-| MensaBadges | [`0x94831c84f00c1F6D9331318fD94e0C77243cb5EE`](https://explorer.sepolia.mantle.xyz/address/0x94831c84f00c1F6D9331318fD94e0C77243cb5EE) |
-| Mock mETH | [`0x66174C1BFe93a8c3FD5820148a664df52Ca4d170`](https://explorer.sepolia.mantle.xyz/address/0x66174C1BFe93a8c3FD5820148a664df52Ca4d170) |
-| Mock USDY | [`0xe73A1eeC53BE30c7AA1e57953216aebBFC0bb120`](https://explorer.sepolia.mantle.xyz/address/0xe73A1eeC53BE30c7AA1e57953216aebBFC0bb120) |
+| MensaAgent | [`0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49`](https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code) |
+| DecisionLog | [`0xD889B7819eF45cda7b9D30bA677A27E0ef6788Fe`](https://mantlescan.xyz/address/0xD889B7819eF45cda7b9D30bA677A27E0ef6788Fe#code) |
+| TournamentVault | [`0x92E6B40da9566d6b7176420D88818500dB77d122`](https://mantlescan.xyz/address/0x92E6B40da9566d6b7176420D88818500dB77d122#code) |
+| Reputation | [`0x10A519fd1867120C5379C7f8016A4223826b4E5f`](https://mantlescan.xyz/address/0x10A519fd1867120C5379C7f8016A4223826b4E5f#code) |
+| BountyPool | [`0x06460f1cb540951e115A95257D59FEeFf9A55f39`](https://mantlescan.xyz/address/0x06460f1cb540951e115A95257D59FEeFf9A55f39#code) |
+| MensaBadges | [`0x22867d39E3e9891A4F76754AF9BD1B131661144E`](https://mantlescan.xyz/address/0x22867d39E3e9891A4F76754AF9BD1B131661144E#code) |
+| mETH (Mantle native) | [`0xcDA86A272531e8640cD7F1a92c01839911B90bb0`](https://mantlescan.xyz/address/0xcDA86A272531e8640cD7F1a92c01839911B90bb0) |
+| USDY (Ondo) | [`0x5bE26527e817998A7206475496fDE1E68957c5A6`](https://mantlescan.xyz/address/0x5bE26527e817998A7206475496fDE1E68957c5A6) |
+
+AI operator + owner (clean wallet): [`0x3a0Dd90212838f32a953Acd4B32596b62859324A`](https://mantlescan.xyz/address/0x3a0Dd90212838f32a953Acd4B32596b62859324A)
+
+GitHub Actions cron runs the agent loop every 30 min: see [`.github/workflows/agent.yml`](.github/workflows/agent.yml).
 
 ---
 
