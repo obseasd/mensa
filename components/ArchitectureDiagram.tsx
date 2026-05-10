@@ -86,7 +86,7 @@ export default function ArchitectureDiagram() {
           <rect x="40" y="420" width="200" height="40" rx="8" fill="#000" stroke="#3a3a3a" strokeDasharray="4 2" />
           <text x="140" y="445" textAnchor="middle" fill="#a0a0a0" fontSize="11" fontFamily="Inter">AI Operator (Claude Haiku 4.5)</text>
         </g>
-        <text x="140" y="475" textAnchor="middle" fill="#5a5a5a" fontSize="9" fontFamily="Inter">off-chain · Bybit signals · executes via aiOperator role</text>
+        <text x="140" y="475" textAnchor="middle" fill="#5a5a5a" fontSize="9" fontFamily="Inter">off-chain · Coingecko + DefiLlama · executes via aiOperator role</text>
       </svg>
 
       <div className="text-[10px] text-[var(--fg-dim)] mt-4 text-center">

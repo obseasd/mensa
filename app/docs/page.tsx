@@ -30,8 +30,8 @@ const STACK = [
   { layer: 'Smart contracts', tech: 'Solidity 0.8.24, OpenZeppelin v5, Foundry' },
   { layer: 'AI', tech: 'Claude Haiku 4.5 via Anthropic SDK' },
   { layer: 'RWA', tech: 'Mantle mETH (liquid staking), Ondo USDY (T-bills)' },
-  { layer: 'Trading signals', tech: 'Bybit API (off-chain market data)' },
-  { layer: 'Skills', tech: 'Byreal Skills CLI (agent composability)' },
+  { layer: 'Market data', tech: 'Coingecko (ETH price), DefiLlama (yields)' },
+  { layer: 'Automation', tech: 'GitHub Actions cron (agent loop + auto-settlement)' },
   { layer: 'Deploy', tech: 'Vercel (frontend), Mantle Sepolia + Mainnet (contracts)' },
 ]
 
@@ -116,8 +116,8 @@ export default function DocsPage() {
               { title: 'mETH liquid staking', detail: 'Mantle\'s native LST is a first-class asset in our treasury. The agent rebalances its yield against USDY in real time. Not portable to other chains.' },
               { title: 'USDY availability', detail: 'Real T-bill yield via Ondo\'s deployment on Mantle. The risk-adjusted alternative to mETH that makes the allocation problem interesting.' },
               { title: 'Low-gas decision logging', detail: 'Every agent decision — including the full reasoning text emitted as event data — is written on-chain. Mantle\'s low fees make this economically viable; on Ethereum L1 it would be prohibitive.' },
-              { title: 'Byreal Skills CLI', detail: 'Mensa\'s agent loop is exposed as a Byreal Skill. Other agents (or humans via CLI) can compose with Mensa as a callable building block.' },
-              { title: 'Bybit signal integration', detail: 'Off-chain market data via Bybit API enriches the agent\'s context. CeFi data informing DeFi execution.' },
+              { title: 'Self-feedback memory loop', detail: 'Before each Claude call, the agent reads its own track record from on-chain settled rounds and injects it into the prompt: per-round alpha vs 50/50 baseline, recent decisions vs in-hindsight optimal. Self-correction without external retraining.' },
+              { title: 'Auto-settlement cron', detail: 'GitHub Actions runs every 30 min: settle any expired rounds with current prices, then call Claude for the next allocation. Fully autonomous, the only human in the loop is whoever deposits or votes.' },
               { title: 'On-chain Turing tournament', detail: 'A Mantle smart contract pits AI vs human allocators on identical inputs. Outcomes settle on-chain. The Turing Test is verifiable, not subjective.' },
             ].map((s) => (
               <div key={s.title} className="card p-4">

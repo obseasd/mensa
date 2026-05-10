@@ -101,9 +101,9 @@ export default function Home() {
                 stack: 'BountyPool contract · 50/30/20 winners/reputation/ops',
               },
               {
-                title: 'Composable as an agent skill',
-                detail: 'Mensa’s reasoning loop and on-chain calls are exposed as a Byreal Skill, callable from any compatible agent runtime. Bybit signals enrich the context.',
-                stack: 'Byreal Skills CLI · Bybit market data API',
+                title: 'Verifiable performance vs passive HODL',
+                detail: 'Every settled round computes the AI return and the 50/50 baseline return from on-chain prices. The cumulative alpha — and the AI win rate — are public stats anyone can audit, not numbers we report.',
+                stack: 'Alpha measured per round · annualized after 30 rounds',
               },
             ].map(({ title, detail, stack }) => (
               <div key={title} className="card p-5">

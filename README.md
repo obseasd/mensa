@@ -73,15 +73,17 @@ The hackathon is called "Turing Test." Mensa takes the name literally: the AI mu
 
 ---
 
-## Tracks (Mantle Turing Test 2026)
+## Tracks (Mantle Turing Test 2026 — Phase 2 AI Awakening)
 
-Submitted to **3 of 6 Phase 2 tracks**:
+Submitted to multiple tracks (the rules allow multi-track submission, but only one prize wins):
 
 | Track | Mensa fit |
 |-------|-----------|
-| **Agentic Wallets & Economy** (primary) | The AI agent IS a wallet that holds + manages user-deposited funds, with reasoning logged on-chain |
-| **AI x RWA** | Allocates between mETH (Mantle liquid staking) and USDY (Ondo tokenized T-bills), both real Mantle RWAs |
-| **AI Trading & Strategy** | Off-chain agent loop integrates Bybit API for market signals, executes via Solidity templates |
+| **AI x RWA** (primary) | Mantle's moat track. Mensa is exactly an "intelligent RWA portfolio management agent" — allocates between mETH (Mantle liquid staking) and USDY (Ondo tokenized T-bills), both live Mantle RWAs. Path B: end-user-facing AI × RWA product. |
+| **Grand Champion** | Cross-track award. Mensa scores on Technical Depth (AI × on-chain integration, 6 verified contracts), Innovation (Turing tournament + verifiable alpha), Mantle Ecosystem Contribution (RWA-native), and Product Completeness (live deployed app). |
+| **AI Alpha & Data** | Path B: trading strategy with verifiable on-chain Alpha. Every decision and outcome is settled on-chain; cumulative alpha vs 50/50 baseline is computed from contract reads. |
+| **Best UI/UX Award** | Clean dark Mantle-aligned design, AI interaction shown via the live decision card with reasoning, fully responsive. |
+| **20 Project Deployment Award** | First-come, first-served. Mensa hits all bars: deployed to mainnet, AI-powered function callable on-chain, public frontend, open-source repo. |
 
 ---
 
@@ -124,9 +126,9 @@ The fee splits:
 | Smart contracts | Solidity 0.8.24 + OpenZeppelin v5 + Foundry |
 | AI | Claude Haiku 4.5 via Anthropic SDK |
 | RWA | Mantle mETH + Ondo USDY |
-| Trading signals | Bybit API |
-| Skills | Byreal Skills CLI (track requirement) |
-| Deploy | Vercel (frontend), Mantle Sepolia (contracts) |
+| Market data | Coingecko (ETH/USD), DefiLlama (mETH and USDY APRs) |
+| Automation | GitHub Actions cron — agent loop + auto-settlement every 30 min |
+| Deploy | Vercel (frontend), Mantle Mainnet (contracts) |
 
 ---
 
@@ -178,7 +180,7 @@ PRIVATE_KEY=0x... node scripts/agent-loop.mjs --once
 2. **Real RWA integration** — mETH + USDY are live Mantle Mainnet contracts
 3. **Reasoning trail on-chain** — Mantle's low gas makes full decision transparency viable
 4. **AI vs Human tournament** — measurable, on-chain settlement of who's actually better
-5. **Multi-sponsor stack** — Mantle + Byreal + Bybit + Anthropic + Ondo
+5. **Verifiable alpha** — every decision settles on-chain, alpha vs 50/50 baseline is computed from contract reads, no claim is unprovable
 6. **Clean Mantle UI/UX** — black/white restrained design language
 7. **Production-ready economics** — performance fee model, not churn fee, anti-Sybil layers
 
