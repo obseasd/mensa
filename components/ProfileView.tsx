@@ -84,7 +84,7 @@ export default function ProfileView({ address }: { address: string }) {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="card p-4">
           <div className="text-2xl font-medium tracking-tight mono text-[var(--accent)]">{profile.reputation}</div>
           <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Reputation</div>

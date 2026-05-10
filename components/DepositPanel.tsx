@@ -203,7 +203,7 @@ export default function DepositPanel() {
   return (
     <div className="space-y-6">
       {/* Stats — wallet, deposit, eligibility */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="card p-4">
           <div className="text-2xl font-medium tracking-tight mono">{fmt(walletWhole, 4)}</div>
           <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Wallet {asset}</div>

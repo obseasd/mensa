@@ -222,7 +222,7 @@ export default function TournamentList() {
   return (
     <div className="space-y-8">
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${aiWinRate.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L`, accent: true },
           {
@@ -318,7 +318,8 @@ export default function TournamentList() {
                 </div>
               </div>
             ) : (
-              <div className="card overflow-hidden">
+              <div className="card overflow-x-auto">
+                <div className="min-w-[640px]">
                 <div className="grid grid-cols-[40px_1fr_100px_100px_100px_80px] gap-3 px-5 py-3 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
                   <div>Round</div>
                   <div>AI Allocation</div>
@@ -370,6 +371,7 @@ export default function TournamentList() {
                     </div>
                   )
                 })}
+                </div>
               </div>
             )}
           </div>

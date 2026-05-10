@@ -115,7 +115,7 @@ export default function AgentLive() {
 
       <p className="text-base leading-relaxed mb-4 text-[var(--fg)]">{reasoning}</p>
 
-      <div className="grid grid-cols-4 gap-3 pt-4 border-t border-[var(--border)]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-[var(--border)]">
         <div>
           <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">Target mETH</div>
           <div className="text-sm font-medium mono mt-1">{newMethAllocPct}%</div>

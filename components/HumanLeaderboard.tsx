@@ -59,7 +59,7 @@ export default function HumanLeaderboard() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <div className="text-3xl font-medium tracking-tight mono text-[var(--accent)]">
               {bounty ? fmtMnt(bounty.winnerPoolBalance, 4) : '—'}
@@ -111,7 +111,8 @@ export default function HumanLeaderboard() {
             </Link>
           </div>
         ) : (
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
+            <div className="min-w-[680px]">
             <div className="grid grid-cols-[40px_1fr_80px_80px_80px_60px_80px] gap-3 px-5 py-3 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
               <div>Rank</div>
               <div>Address</div>
@@ -144,6 +145,7 @@ export default function HumanLeaderboard() {
                 </div>
               </Link>
             ))}
+            </div>
           </div>
         )}
       </div>

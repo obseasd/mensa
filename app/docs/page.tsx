@@ -146,6 +146,54 @@ export default function DocsPage() {
           </div>
         </section>
 
+        {/* Hackathon tracks */}
+        <section className="mb-12">
+          <h2 className="text-lg font-medium mb-4">Hackathon tracks</h2>
+          <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
+            Mantle Turing Test 2026 · Phase 2 (AI Awakening). Mensa is submitted to multiple
+            tracks (a single BUIDL can be entered into several, but only one prize wins).
+          </p>
+          <div className="grid gap-3">
+            {[
+              {
+                name: 'AI × RWA',
+                primary: true,
+                fit: 'Path B — end-user-facing AI × RWA product. Mensa is exactly an "intelligent RWA portfolio management agent" managing mETH (Mantle LST) and USDY (Ondo tokenized T-bills), the two RWAs the track explicitly names.',
+              },
+              {
+                name: 'Grand Champion',
+                primary: false,
+                fit: 'Cross-track. Scores Technical Depth (AI × on-chain integration, 6 verified contracts), Innovation (Turing tournament + verifiable alpha), Mantle Ecosystem Contribution (RWA-native, low-gas decision logging), and Product Completeness (live deployed app, autonomous loop).',
+              },
+              {
+                name: 'AI Alpha & Data',
+                primary: false,
+                fit: 'Path B — trading strategy with verifiable on-chain Alpha. Every decision and outcome is settled on-chain; cumulative alpha vs 50/50 baseline is computed from contract reads, not self-reported.',
+              },
+              {
+                name: 'Best UI/UX Award',
+                primary: false,
+                fit: 'Clean dark Mantle-aligned design with sage accent. AI interaction surfaced via the live decision card with reasoning. Fully responsive.',
+              },
+              {
+                name: '20 Project Deployment Award',
+                primary: false,
+                fit: 'First-come, first-served. Mensa hits all bars: 6 contracts deployed and verified on Mantle Mainnet, AI-powered function (executeAllocation) callable on-chain, public frontend, open-source repo with README.',
+              },
+            ].map((t) => (
+              <div key={t.name} className="card p-4">
+                <div className="flex items-start gap-3 mb-1">
+                  {t.primary && (
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Primary</span>
+                  )}
+                  <div className="text-sm font-medium">{t.name}</div>
+                </div>
+                <p className="text-xs text-[var(--fg-muted)] leading-relaxed">{t.fit}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Mantle yield landscape */}
         <section className="mb-12">
           <h2 className="text-lg font-medium mb-2">Mantle yield landscape</h2>

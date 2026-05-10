@@ -51,7 +51,8 @@ export default function HomeTournamentFeed() {
   }
 
   return (
-    <div className="card overflow-hidden">
+    <div className="card overflow-x-auto">
+      <div className="min-w-[640px]">
       <div className="grid grid-cols-12 px-5 py-3 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
         <div className="col-span-2">Round</div>
         <div className="col-span-3">AI</div>
@@ -91,6 +92,7 @@ export default function HomeTournamentFeed() {
           </Link>
         )
       })}
+      </div>
     </div>
   )
 }
