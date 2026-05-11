@@ -308,15 +308,30 @@ export default function DocsPage() {
                 <span className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mono shrink-0 mt-0.5">Next</span>
                 <div className="text-sm font-medium">ERC-4626 share model + real swap execution</div>
               </div>
-              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed mb-3">
                 Replace the unified balance with shares minted at deposit and burned at withdraw,
-                proportional to USD value of the treasury at the time. Every depositor owns
-                a slice of the entire pool, regardless of asset composition.
-                <span className="text-[var(--fg)]"> executeAllocation</span> then routes a real swap via
-                Velora (mainnet) or Uniswap V3 (Sepolia) with slippage caps and a sanity check on
-                price. Both pieces are scaffolded — see the
-                {' '}<code className="text-[var(--fg)] mono">simulation.ts</code> module — and were
-                deferred to keep the demo focused on the AI loop.
+                proportional to USD value of the treasury at the time. Every depositor owns a
+                slice of the entire pool, regardless of asset composition.{' '}
+                <code className="text-[var(--fg)] mono">executeAllocation</code> then routes a real
+                swap via a DEX aggregator with slippage caps and a sanity check on price.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] leading-relaxed">
+                <span className="text-[var(--fg-muted)]">DEX reality check:</span> we surveyed Merchant
+                Moe V2 (router{' '}
+                <a
+                  href="https://mantlescan.xyz/address/0xeaEE7EE68874218c3558b40063c42B82D3E7232a"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[var(--accent)] underline"
+                >
+                  0xeaEE...232a
+                </a>
+                ) for live mETH↔USDY routing. No direct pool. Multi-hop via USDC is technically
+                possible but pool reserves are thin (mETH/USDC ≈ $6 TVL, USDC/USDY ≈ $22 TVL as of
+                this run) — any meaningful swap would slip 30-50%. Real execution is gated less on
+                our code and more on Mantle DEX liquidity maturity. Velora aggregator on mainnet
+                is the production path; until then the tournament mechanism measures the AI&apos;s
+                allocation quality on theoretical returns, which is what alpha tracking does.
               </p>
             </div>
 
