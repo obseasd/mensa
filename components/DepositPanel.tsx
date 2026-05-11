@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount, useChainId, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useChainId, useWriteContract, useReadContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 import { mantle, mantleSepolia } from '@/lib/wagmi'
@@ -45,8 +45,10 @@ function fmtUsd(n: number): string {
 export default function DepositPanel() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
   const isMainnet = chainId === mantle.id
   const isMantle = chainId === mantle.id || chainId === mantleSepolia.id
+  const isOnSignChain = chainId === ACTIVE_CHAIN.id
 
   const [asset, setAsset] = useState<Asset>('mETH')
   const [mode, setMode] = useState<Mode>('deposit')
@@ -136,10 +138,16 @@ export default function DepositPanel() {
   const needsMint = !isMainnet && walletBalance !== undefined && walletBalance < amountWei
   const needsApproval = mode === 'deposit' && allowance !== undefined && allowance < amountWei
 
+  // Always pin the signing chain to the active Mensa chain. wagmi will prompt
+  // the wallet to switch if needed and refuse to sign if the wallet ignores
+  // the prompt — prevents 'approved on Ethereum mainnet by accident' bugs.
+  const SIGN_CHAIN_ID = ACTIVE_CHAIN.id
+
   const handleMint = () => {
     if (!address) return
     setStep('minting')
     writeContract({
+      chainId: SIGN_CHAIN_ID,
       address: assetAddr as `0x${string}`,
       abi: ERC20_ABI,
       functionName: 'mint',
@@ -150,6 +158,7 @@ export default function DepositPanel() {
   const handleApprove = () => {
     setStep('approving')
     writeContract({
+      chainId: SIGN_CHAIN_ID,
       address: assetAddr as `0x${string}`,
       abi: ERC20_ABI,
       functionName: 'approve',
@@ -160,6 +169,7 @@ export default function DepositPanel() {
   const handleDeposit = () => {
     setStep('depositing')
     writeContract({
+      chainId: SIGN_CHAIN_ID,
       address: agentAddr as `0x${string}`,
       abi: AGENT_ABI,
       functionName: 'deposit',
@@ -170,6 +180,7 @@ export default function DepositPanel() {
   const handleWithdraw = () => {
     setStep('withdrawing')
     writeContract({
+      chainId: SIGN_CHAIN_ID,
       address: agentAddr as `0x${string}`,
       abi: AGENT_ABI,
       functionName: 'withdraw',
@@ -209,6 +220,41 @@ export default function DepositPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Chain banner — make the signing chain mismatch impossible to miss */}
+      <div
+        className={`card p-3 flex items-center justify-between gap-3 ${
+          isOnSignChain ? '' : 'border-orange-400/40'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: isOnSignChain ? 'var(--accent)' : '#f97316' }}
+          />
+          <div className="text-xs">
+            <span className="text-[var(--fg-muted)]">Signing on </span>
+            <span className={isOnSignChain ? 'text-[var(--fg)]' : 'text-orange-400'}>
+              {chainId === mantle.id
+                ? 'Mantle Mainnet'
+                : chainId === mantleSepolia.id
+                ? 'Mantle Sepolia'
+                : `Chain ${chainId} (wrong)`}
+            </span>
+            {!isOnSignChain && (
+              <span className="text-[var(--fg-dim)]"> · Mensa is on {ACTIVE_CHAIN.name}</span>
+            )}
+          </div>
+        </div>
+        {!isOnSignChain && (
+          <button
+            onClick={() => switchChain({ chainId: ACTIVE_CHAIN.id })}
+            className="text-[10px] uppercase tracking-wider px-2 py-1 rounded border border-orange-400/40 text-orange-400 hover:bg-orange-400/10 transition"
+          >
+            Switch to {ACTIVE_CHAIN.name}
+          </button>
+        )}
+      </div>
+
       {/* Stats — wallet, deposit, eligibility */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="card p-4">
