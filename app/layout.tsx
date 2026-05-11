@@ -7,9 +7,23 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
-  title: "Mensa — The AI Treasury that Passes the Turing Test",
-  description: "Autonomous AI treasury agent on Mantle. Every decision is on-chain, explained, and challenged by humans.",
+  metadataBase: new URL("https://mensa-mu.vercel.app"),
+  title: "Mensa — The AI treasury that proves itself",
+  description: "Intelligent RWA portfolio management agent on Mantle. Allocates between mETH and USDY, with every decision logged on-chain and challenged by humans in a verifiable Turing tournament.",
+  keywords: ["Mantle", "AI agent", "RWA", "mETH", "USDY", "Ondo", "DeFi", "Turing Test", "treasury"],
   icons: { icon: "/favicon.ico" },
+  openGraph: {
+    title: "Mensa — The AI treasury that proves itself",
+    description: "Intelligent RWA portfolio management agent on Mantle. Every decision on-chain, every decision challenged.",
+    url: "https://mensa-mu.vercel.app",
+    siteName: "Mensa",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mensa — The AI treasury that proves itself",
+    description: "Intelligent RWA portfolio management agent on Mantle. AI vs humans, settled on-chain.",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ethers } from 'ethers'
 import { ACTIVE_CHAIN } from '@/lib/chains'
+import Tooltip, { GLOSSARY } from './Tooltip'
 
 const BOUNTY_CLAIM_ABI = [
   { name: 'claim', type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] },
@@ -70,9 +72,19 @@ export default function ProfileView({ address }: { address: string }) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-medium tracking-tight mb-1">
-          {isOwnProfile ? 'Your profile' : 'Profile'}
-        </h1>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <h1 className="text-2xl font-medium tracking-tight">
+            {isOwnProfile ? 'Your profile' : 'Voter profile'}
+          </h1>
+          {!isOwnProfile && (
+            <Link
+              href="/leaderboard"
+              className="text-[11px] text-[var(--fg-muted)] hover:text-[var(--accent)] transition"
+            >
+              ← Leaderboard
+            </Link>
+          )}
+        </div>
         <a
           href={`${ACTIVE_CHAIN.explorer}/address/${address}`}
           target="_blank"
@@ -83,15 +95,42 @@ export default function ProfileView({ address }: { address: string }) {
         </a>
       </div>
 
+      {/* Empty state if this user has never voted */}
+      {!profile.hasParticipated && (
+        <div className="card p-8 text-center">
+          <div className="text-sm font-medium mb-2">
+            {isOwnProfile ? 'You haven’t voted yet' : 'This wallet hasn’t voted yet'}
+          </div>
+          <div className="text-xs text-[var(--fg-muted)] leading-relaxed max-w-md mx-auto mb-4">
+            Reputation, badges, and bounty rewards all kick in once you cast your first vote on a
+            tournament round. Pick your own mETH/USDY split, beat the AI when it settles, earn
+            your way up the leaderboard.
+          </div>
+          {isOwnProfile && (
+            <Link href="/tournament" className="inline-block btn-accent text-xs px-4 py-2">
+              Vote on a round →
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="card p-4">
           <div className="text-2xl font-medium tracking-tight mono text-[var(--accent)]">{profile.reputation}</div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Reputation</div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">
+            <Tooltip content={<>
+              <span className="font-medium">Reputation</span> — Score that accumulates on every
+              tournament round you participate in. +up to 50 for beating the AI, −up to 25 for
+              underperforming it. Determines your vote weight.
+            </>} side="bottom">Reputation</Tooltip>
+          </div>
         </div>
         <div className="card p-4">
-          <div className="text-2xl font-medium tracking-tight mono">x{profile.weight}</div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Vote Weight</div>
+          <div className="text-2xl font-medium tracking-tight mono">{profile.weight}x</div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">
+            <Tooltip content={GLOSSARY.sqrtRep} side="bottom">Vote Weight</Tooltip>
+          </div>
         </div>
         <div className="card p-4">
           <div className="text-2xl font-medium tracking-tight mono">{profile.winRatePct}%</div>
@@ -101,17 +140,24 @@ export default function ProfileView({ address }: { address: string }) {
         <div className="card p-4">
           <div className="text-2xl font-medium tracking-tight mono">{profile.badgeCount}</div>
           <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-2">Badges</div>
+          <div className="text-[10px] text-[var(--fg-dim)] mt-1">of {BADGE_NAMES.length} total</div>
         </div>
       </div>
 
-      {/* Claimable bounty */}
-      {isOwnProfile && (
+      {/* Claimable bounty — only show if own profile AND there's something to claim
+          or if it's own profile but participated (encourages voting more) */}
+      {isOwnProfile && profile.hasParticipated && (
         <div className="card p-5">
           <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Claimable bounty</div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <div className="text-3xl font-medium tracking-tight mono">{claimableEth} <span className="text-base text-[var(--fg-muted)]">MNT</span></div>
-              <div className="text-[10px] text-[var(--fg-dim)] mt-1">Earned from beating the AI</div>
+              <div className="text-3xl font-medium tracking-tight mono">
+                {Number(claimableEth).toFixed(4)}{' '}
+                <span className="text-base text-[var(--fg-muted)]">MNT</span>
+              </div>
+              <div className="text-[10px] text-[var(--fg-dim)] mt-1">
+                {hasClaimable ? 'Earned from beating the AI' : 'No rewards available right now'}
+              </div>
             </div>
             <button
               onClick={handleClaim}
@@ -127,7 +173,7 @@ export default function ProfileView({ address }: { address: string }) {
       {/* Badges */}
       <div className="card p-5">
         <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Achievements</div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
           {BADGE_NAMES.map((name, i) => {
             const owned = profile.badges[i]
             return (
