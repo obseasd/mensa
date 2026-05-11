@@ -7,6 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-white?style=flat-square)](LICENSE)
 [![Built for Mantle Turing Test](https://img.shields.io/badge/hackathon-Mantle%20Turing%20Test%202026-white?style=flat-square)](https://dorahacks.io/hackathon/mantleturingtesthackathon2026/)
 
+![Mensa preview](https://mensa-mu.vercel.app/opengraph-image)
+
 Mensa is an **intelligent RWA portfolio management agent** on Mantle. It allocates user-deposited funds between **mETH** (Mantle liquid-staked ETH) and **USDY** (Ondo tokenized US Treasury bills), with every decision:
 
 - Made by Claude Haiku 4.5 reading live market state + the agent's own track record
@@ -15,9 +17,20 @@ Mensa is an **intelligent RWA portfolio management agent** on Mantle. It allocat
 
 > The hackathon is called "Turing Test." Mensa takes it literally: the AI must prove, on-chain, that it allocates better than humans on the same data.
 
-**Live demo:** https://mensa-mu.vercel.app · **Pages:** Agent · Tournament · Backtest · Deposit · Leaderboard · Docs
+**Live demo:** https://mensa-mu.vercel.app
 
 **Built for:** DAO treasuries · Sophisticated DeFi savers · RWA-backed protocols
+
+### What you'll see in the live app
+
+| Page | What it shows |
+|------|---------------|
+| [`/`](https://mensa-mu.vercel.app/) Agent | Hero, on-chain TVL / AI win rate / alpha vs 50-50, current allocation bar, the agent's latest decision with reasoning, recent tournament rounds. |
+| [`/tournament`](https://mensa-mu.vercel.app/tournament) | "How it works" sidebar, AI vs Human stats, pending rounds where you can vote your own allocation, settled history with per-round AI/Human/optimal returns. |
+| [`/backtest`](https://mensa-mu.vercel.app/backtest) | The Mensa-style heuristic replayed on 30/90/180/365d of real ETH price history, vs 50-50 hold + 100% mETH + 100% USDY. Risk-adjusted comparison, max drawdown, Sharpe-like, methodology section. |
+| [`/deposit`](https://mensa-mu.vercel.app/deposit) | Deposit/withdraw flow for mETH and USDY, live APY breakdown (passive 50-50 vs Mensa active at current alloc, plus observed alpha), 15% perf fee disclosure. |
+| [`/leaderboard`](https://mensa-mu.vercel.app/leaderboard) | Bounty pool stats, top humans by reputation/win-rate/badges/claimable, sidebar with how-rewards-work + Mensa yield sources. |
+| [`/docs`](https://mensa-mu.vercel.app/docs) | Architecture diagram, 6 verified contracts with role + risk, Hackathon tracks, Compliance posture, MVP scope & roadmap, Mantle yield landscape. |
 
 ---
 
