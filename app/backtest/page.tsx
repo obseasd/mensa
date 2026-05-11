@@ -57,7 +57,7 @@ function StatRow({ label, value, color, mono = true }: { label: string; value: s
 }
 
 export default function BacktestPage() {
-  const [days, setDays] = useState(90)
+  const [days, setDays] = useState(365)
   const [result, setResult] = useState<BacktestResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
