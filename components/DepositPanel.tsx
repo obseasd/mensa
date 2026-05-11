@@ -6,6 +6,7 @@ import { parseUnits, formatUnits } from 'viem'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 import { mantle, mantleSepolia } from '@/lib/wagmi'
 import Tooltip, { GLOSSARY } from './Tooltip'
+import { showToast } from './Toast'
 
 const ERC20_ABI = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'a', type: 'address' }], outputs: [{ type: 'uint256' }] },
@@ -51,15 +52,17 @@ export default function DepositPanel() {
   const isOnSignChain = chainId === ACTIVE_CHAIN.id
 
   // Ensure the wallet is on the right chain before any signed action.
-  // wagmi will refuse silently if chainId mismatches the pinned chainId on
-  // writeContract, so we have to actively switch first.
+  // We ALWAYS call switchChainAsync (not just on cached mismatch): wagmi's
+  // useChainId can lag behind the wallet's actual active chain, so calling
+  // switchChainAsync defensively forces the wallet to confirm. If the wallet
+  // is already on the target chain, the call resolves immediately as a no-op.
   const ensureChain = async (): Promise<boolean> => {
-    if (isOnSignChain) return true
     try {
       await switchChainAsync({ chainId: ACTIVE_CHAIN.id })
       return true
     } catch (e) {
       console.error('[chain-switch] user rejected or failed', e)
+      showToast(`Switch to ${ACTIVE_CHAIN.name} cancelled`, 'error')
       return false
     }
   }
@@ -130,20 +133,31 @@ export default function DepositPanel() {
     query: { enabled: !!address && isMantle, refetchInterval: 5000 },
   })
 
-  const { writeContract, data: txHash, isPending } = useWriteContract()
+  const { writeContractAsync, data: txHash, isPending } = useWriteContract()
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
+  // Toast on confirmation of the most recent tx, scoped by the current step.
+  // Step is reset right after so we don't re-fire the toast on subsequent
+  // re-renders that keep isSuccess at true until txHash changes.
   useEffect(() => {
-    if (isSuccess) {
-      refetchBalance()
-      refetchAllowance()
-      refetchDeposited()
-      // Reset step so we don't get stuck on 'Approving...' / 'Confirming...'
-      // labels once the receipt is in. The button block visibility is driven
-      // by needsApproval/needsMint, but the label inside is driven by step.
-      setStep('idle')
+    if (!isSuccess || !txHash) return
+    refetchBalance()
+    refetchAllowance()
+    refetchDeposited()
+
+    const explorer = `${ACTIVE_CHAIN.explorer}/tx/${txHash}`
+    if (step === 'approving') {
+      showToast(`Approved ${amount} ${asset}. You can now deposit.`, 'success', { href: explorer, label: 'View on Mantlescan' })
+    } else if (step === 'depositing') {
+      showToast(`Deposited ${amount} ${asset} into Mensa.`, 'success', { href: explorer, label: 'View on Mantlescan' })
+    } else if (step === 'withdrawing') {
+      showToast(`Withdrew ${amount} ${asset}.`, 'success', { href: explorer, label: 'View on Mantlescan' })
+    } else if (step === 'minting') {
+      showToast(`Minted 1000 ${asset} (testnet).`, 'success', { href: explorer, label: 'View on explorer' })
     }
-  }, [isSuccess, refetchBalance, refetchAllowance, refetchDeposited])
+    setStep('idle')
+  }, [isSuccess, txHash])
+  // eslint-disable-line react-hooks/exhaustive-deps
 
   const amountWei = (() => {
     try { return parseUnits(amount || '0', 18) } catch { return BigInt(0) }
@@ -157,53 +171,84 @@ export default function DepositPanel() {
   // the prompt — prevents 'approved on Ethereum mainnet by accident' bugs.
   const SIGN_CHAIN_ID = ACTIVE_CHAIN.id
 
+  // Surface tx send / signing errors as a toast. Wagmi v2's writeContractAsync
+  // throws ChainMismatchError, UserRejectedRequestError, ContractFunctionRevertedError, etc.
+  function explainError(e: unknown): string {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (msg.match(/user rejected|user denied/i)) return 'You cancelled the transaction.'
+    if (msg.match(/chain.*mismatch|wrong network/i)) return 'Wrong chain — please switch in your wallet.'
+    if (msg.match(/insufficient funds/i)) return 'Insufficient MNT for gas.'
+    if (msg.length > 140) return msg.slice(0, 140) + '...'
+    return msg
+  }
+
   const handleMint = async () => {
     if (!address) return
     if (!(await ensureChain())) return
     setStep('minting')
-    writeContract({
-      chainId: SIGN_CHAIN_ID,
-      address: assetAddr as `0x${string}`,
-      abi: ERC20_ABI,
-      functionName: 'mint',
-      args: [address, parseUnits('1000', 18)],
-    })
+    try {
+      await writeContractAsync({
+        chainId: SIGN_CHAIN_ID,
+        address: assetAddr as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'mint',
+        args: [address, parseUnits('1000', 18)],
+      })
+    } catch (e) {
+      setStep('idle')
+      showToast(`Mint failed: ${explainError(e)}`, 'error')
+    }
   }
 
   const handleApprove = async () => {
     if (!(await ensureChain())) return
     setStep('approving')
-    writeContract({
-      chainId: SIGN_CHAIN_ID,
-      address: assetAddr as `0x${string}`,
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [agentAddr as `0x${string}`, amountWei],
-    })
+    try {
+      await writeContractAsync({
+        chainId: SIGN_CHAIN_ID,
+        address: assetAddr as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [agentAddr as `0x${string}`, amountWei],
+      })
+    } catch (e) {
+      setStep('idle')
+      showToast(`Approve failed: ${explainError(e)}`, 'error')
+    }
   }
 
   const handleDeposit = async () => {
     if (!(await ensureChain())) return
     setStep('depositing')
-    writeContract({
-      chainId: SIGN_CHAIN_ID,
-      address: agentAddr as `0x${string}`,
-      abi: AGENT_ABI,
-      functionName: 'deposit',
-      args: [assetAddr as `0x${string}`, amountWei],
-    })
+    try {
+      await writeContractAsync({
+        chainId: SIGN_CHAIN_ID,
+        address: agentAddr as `0x${string}`,
+        abi: AGENT_ABI,
+        functionName: 'deposit',
+        args: [assetAddr as `0x${string}`, amountWei],
+      })
+    } catch (e) {
+      setStep('idle')
+      showToast(`Deposit failed: ${explainError(e)}`, 'error')
+    }
   }
 
   const handleWithdraw = async () => {
     if (!(await ensureChain())) return
     setStep('withdrawing')
-    writeContract({
-      chainId: SIGN_CHAIN_ID,
-      address: agentAddr as `0x${string}`,
-      abi: AGENT_ABI,
-      functionName: 'withdraw',
-      args: [assetAddr as `0x${string}`, amountWei],
-    })
+    try {
+      await writeContractAsync({
+        chainId: SIGN_CHAIN_ID,
+        address: agentAddr as `0x${string}`,
+        abi: AGENT_ABI,
+        functionName: 'withdraw',
+        args: [assetAddr as `0x${string}`, amountWei],
+      })
+    } catch (e) {
+      setStep('idle')
+      showToast(`Withdraw failed: ${explainError(e)}`, 'error')
+    }
   }
 
   const handleMax = () => {
