@@ -45,10 +45,24 @@ function fmtUsd(n: number): string {
 export default function DepositPanel() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
-  const { switchChain } = useSwitchChain()
+  const { switchChain, switchChainAsync } = useSwitchChain()
   const isMainnet = chainId === mantle.id
   const isMantle = chainId === mantle.id || chainId === mantleSepolia.id
   const isOnSignChain = chainId === ACTIVE_CHAIN.id
+
+  // Ensure the wallet is on the right chain before any signed action.
+  // wagmi will refuse silently if chainId mismatches the pinned chainId on
+  // writeContract, so we have to actively switch first.
+  const ensureChain = async (): Promise<boolean> => {
+    if (isOnSignChain) return true
+    try {
+      await switchChainAsync({ chainId: ACTIVE_CHAIN.id })
+      return true
+    } catch (e) {
+      console.error('[chain-switch] user rejected or failed', e)
+      return false
+    }
+  }
 
   const [asset, setAsset] = useState<Asset>('mETH')
   const [mode, setMode] = useState<Mode>('deposit')
@@ -143,8 +157,9 @@ export default function DepositPanel() {
   // the prompt — prevents 'approved on Ethereum mainnet by accident' bugs.
   const SIGN_CHAIN_ID = ACTIVE_CHAIN.id
 
-  const handleMint = () => {
+  const handleMint = async () => {
     if (!address) return
+    if (!(await ensureChain())) return
     setStep('minting')
     writeContract({
       chainId: SIGN_CHAIN_ID,
@@ -155,7 +170,8 @@ export default function DepositPanel() {
     })
   }
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
+    if (!(await ensureChain())) return
     setStep('approving')
     writeContract({
       chainId: SIGN_CHAIN_ID,
@@ -166,7 +182,8 @@ export default function DepositPanel() {
     })
   }
 
-  const handleDeposit = () => {
+  const handleDeposit = async () => {
+    if (!(await ensureChain())) return
     setStep('depositing')
     writeContract({
       chainId: SIGN_CHAIN_ID,
@@ -177,7 +194,8 @@ export default function DepositPanel() {
     })
   }
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
+    if (!(await ensureChain())) return
     setStep('withdrawing')
     writeContract({
       chainId: SIGN_CHAIN_ID,
