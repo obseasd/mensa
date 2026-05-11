@@ -9,7 +9,7 @@ export default function Nav() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <nav className="relative z-10 border-b border-[var(--border)]" style={{ background: '#0F1010' }}>
+    <nav className="relative z-50 border-b border-[var(--border)]" style={{ background: '#0F1010' }}>
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-3 group">
           <img src="/logo.png" alt="Mensa" className="w-11 h-11 transition group-hover:opacity-80" />

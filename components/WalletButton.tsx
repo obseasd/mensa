@@ -40,7 +40,7 @@ export default function WalletButton() {
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 top-full mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-md shadow-xl p-1 z-50">
+          <div className="absolute right-0 top-full mt-2 w-56 bg-[var(--bg-card)] border border-[var(--border)] rounded-md shadow-xl p-1 z-[100]">
             {!isMantle && (
               <>
                 <button

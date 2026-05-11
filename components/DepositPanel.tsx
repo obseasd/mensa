@@ -93,15 +93,17 @@ export default function DepositPanel() {
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && isMantle },
+    query: { enabled: !!address && isMantle, refetchInterval: 5000 },
   })
 
+  // Allowance is polled aggressively because the Approve -> Deposit transition
+  // depends on it. Without this, if the receipt watcher hangs the UI is stuck.
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: assetAddr as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, agentAddr as `0x${string}`] : undefined,
-    query: { enabled: !!address && isMantle && mode === 'deposit' },
+    query: { enabled: !!address && isMantle && mode === 'deposit', refetchInterval: 2500 },
   })
 
   const { data: depositedBalance, refetch: refetchDeposited } = useReadContract({
@@ -109,7 +111,7 @@ export default function DepositPanel() {
     abi: AGENT_ABI,
     functionName: 'userBalance',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && isMantle },
+    query: { enabled: !!address && isMantle, refetchInterval: 5000 },
   })
 
   const { writeContract, data: txHash, isPending } = useWriteContract()
@@ -120,6 +122,10 @@ export default function DepositPanel() {
       refetchBalance()
       refetchAllowance()
       refetchDeposited()
+      // Reset step so we don't get stuck on 'Approving...' / 'Confirming...'
+      // labels once the receipt is in. The button block visibility is driven
+      // by needsApproval/needsMint, but the label inside is driven by step.
+      setStep('idle')
     }
   }, [isSuccess, refetchBalance, refetchAllowance, refetchDeposited])
 
@@ -360,9 +366,15 @@ export default function DepositPanel() {
             <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">Amount</div>
             <button
               onClick={handleMax}
-              className="text-[10px] text-[var(--fg-muted)] hover:text-[var(--accent)] transition"
+              className="text-[10px] text-[var(--fg-muted)] hover:text-[var(--accent)] transition flex items-center gap-1.5"
             >
-              MAX
+              <span className="mono text-[var(--fg-dim)]">
+                {mode === 'deposit'
+                  ? `${fmt(walletWhole, 4)} ${asset} available`
+                  : `${fmt(depositedWhole, 4)} ${asset} deposited`}
+              </span>
+              <span>·</span>
+              <span>MAX</span>
             </button>
           </div>
           <input
