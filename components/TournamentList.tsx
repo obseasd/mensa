@@ -262,8 +262,30 @@ export default function TournamentList() {
 
       {/* Pending rounds — vote UI */}
       {(() => {
+        if (loading) return null
         const pending = rounds.filter(r => !r.settled)
-        if (pending.length === 0) return null
+        if (pending.length === 0) {
+          const lastRound = rounds[0]
+          const lastSettleTime = lastRound ? Number(lastRound.settlementTime) : 0
+          const hoursAgo = lastSettleTime > 0 ? Math.max(0, Math.round((Date.now() / 1000 - lastSettleTime) / 3600)) : 0
+          return (
+            <div>
+              <h2 className="text-sm uppercase tracking-wider text-[var(--fg-muted)] mb-3">
+                Pending — vote against the AI
+              </h2>
+              <div className="card p-6">
+                <div className="text-sm font-medium mb-2">No round open right now</div>
+                <div className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                  A new round opens every time Mensa rebalances — that&apos;s when Claude&apos;s
+                  decision changes by enough basis points to clear the cooldown. The most recent
+                  round closed{hoursAgo > 0 ? ` ${hoursAgo}h ago` : ' just now'}. The GitHub Actions
+                  cron runs every 30 minutes; the next time Claude calls REBALANCE, a fresh round
+                  will appear here for voting (24h window).
+                </div>
+              </div>
+            </div>
+          )
+        }
         return (
           <div>
             <h2 className="text-sm uppercase tracking-wider text-[var(--fg-muted)] mb-3">
