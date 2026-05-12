@@ -163,6 +163,14 @@ async function settleExpiredRounds(wallet, state) {
   return settled
 }
 
+/// Round #1 was the genesis decision BEFORE the memory loop existed (this
+/// function didn't run on it). Including it makes the track record look much
+/// worse than the actual post-feedback performance — Claude reads -62%
+/// annualized and goes risk-off when reality is better. Track 'since
+/// calibrated' as the headline number, but show the full sample below for
+/// honesty.
+const COLD_START_ROUND_IDS = new Set([1])
+
 async function fetchTrackRecord(provider) {
   try {
     const t = new ethers.Contract(TOURNAMENT_ADDR, TOURNAMENT_ABI, provider)
@@ -170,10 +178,14 @@ async function fetchTrackRecord(provider) {
     if (total === 0) return 'Track record: No settled rounds yet — early-stage decision making. Be measured.'
     const ids = Array.from({ length: Math.min(20, total) }, (_, i) => total - i)
     const rounds = await Promise.all(ids.map(id => t.rounds(id)))
-    let cumAi = 0, cumBase = 0, settled = 0
+
+    let cumAiFull = 0, cumBaseFull = 0, settledFull = 0
+    let cumAiCal = 0, cumBaseCal = 0, settledCal = 0
     const recent = []
+
     for (const r of rounds) {
       if (!r.settled) continue
+      const id = Number(r.id)
       const sm = Number(r.startMethPrice), em = Number(r.settleMethPrice)
       const su = Number(r.startUsdyPrice), eu = Number(r.settleUsdyPrice)
       if (sm === 0 || su === 0) continue
@@ -181,26 +193,40 @@ async function fetchTrackRecord(provider) {
       const usdyBps = Math.round(((eu - su) / su) * 10000)
       const baseBps = Math.round((methBps + usdyBps) / 2)
       const aiBps = Number(r.aiReturnBps)
-      cumAi += aiBps; cumBase += baseBps; settled++
+      cumAiFull += aiBps; cumBaseFull += baseBps; settledFull++
+      if (!COLD_START_ROUND_IDS.has(id)) {
+        cumAiCal += aiBps; cumBaseCal += baseBps; settledCal++
+      }
       const optAlloc = methBps > usdyBps ? 100 : 0
       const optBps = optAlloc === 100 ? methBps : usdyBps
-      recent.push(`  Round #${Number(r.id)}: you=${Number(r.aiAllocMeth)}% mETH (${aiBps}bps) | 50/50=${baseBps}bps | optimal=${optAlloc}% mETH (${optBps}bps) | you-vs-base=${aiBps - baseBps >= 0 ? '+' : ''}${aiBps - baseBps}bps`)
+      const tag = COLD_START_ROUND_IDS.has(id) ? ' [cold start, pre-memory]' : ''
+      recent.push(`  Round #${id}: you=${Number(r.aiAllocMeth)}% mETH (${aiBps}bps) | 50/50=${baseBps}bps | optimal=${optAlloc}% mETH (${optBps}bps) | you-vs-base=${aiBps - baseBps >= 0 ? '+' : ''}${aiBps - baseBps}bps${tag}`)
     }
-    if (settled === 0) return 'Track record: No settled rounds yet — early-stage decision making. Be measured.'
-    const alphaBps = cumAi - cumBase
-    const perRound = alphaBps / settled
-    const annualizedPct = (perRound * 365) / 100
-    const sign = alphaBps >= 0 ? '+' : ''
-    return [
-      `Track record (${settled} settled rounds):`,
-      `  Cumulative alpha vs 50/50: ${sign}${alphaBps} bps (${sign}${annualizedPct.toFixed(2)}% annualized)`,
-      `  Per-round average: ${sign}${perRound.toFixed(0)} bps`,
+
+    if (settledFull === 0) return 'Track record: No settled rounds yet — early-stage decision making. Be measured.'
+
+    const alphaCal = cumAiCal - cumBaseCal
+    const perRoundCal = settledCal > 0 ? alphaCal / settledCal : 0
+    const signCal = alphaCal >= 0 ? '+' : ''
+    const alphaFull = cumAiFull - cumBaseFull
+    const perRoundFull = alphaFull / settledFull
+    const signFull = alphaFull >= 0 ? '+' : ''
+
+    const lines = [
+      `Track record (since memory loop calibrated, ${settledCal} rounds):`,
+      `  Cumulative alpha vs 50/50 baseline: ${signCal}${alphaCal} bps`,
+      `  Per-round average: ${signCal}${perRoundCal.toFixed(0)} bps`,
+      `  Reading: this is the post-feedback performance. Don't extrapolate annualization on a small sample.`,
       '',
-      'Recent rounds:',
+      `Full sample including cold-start round #1 (${settledFull} rounds): ${signFull}${alphaFull} bps cumulative, ${signFull}${perRoundFull.toFixed(0)} bps/round.`,
+      `Round #1 was a -324bps loss made before this feedback loop existed — note it but don't let it dominate your current strategy.`,
+      '',
+      'Recent rounds (newest first):',
       ...recent.slice(0, 8),
       '',
       'Reflect: when did you under-allocate to the winning asset? When did you over-rebalance and lose to passive 50/50? Use this self-knowledge.',
-    ].join('\n')
+    ]
+    return lines.join('\n')
   } catch (e) {
     return `Track record: unavailable (${e.message}). Decide on first principles.`
   }
