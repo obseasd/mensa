@@ -3,7 +3,8 @@
 **The AI treasury that proves itself.**
 
 [![Mantle Mainnet](https://img.shields.io/badge/deployed-Mantle%20Mainnet-A3BAB9?style=flat-square)](https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49)
-[![Contracts verified](https://img.shields.io/badge/contracts-6%2F6%20verified-A3BAB9?style=flat-square)](https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code)
+[![Contracts verified](https://img.shields.io/badge/contracts-7%2F7%20verified-A3BAB9?style=flat-square)](https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code)
+[![ERC-8004](https://img.shields.io/badge/ERC--8004-agent%20%231-A3BAB9?style=flat-square)](https://mantlescan.xyz/address/0x6671E554Da8e874D7aF5F106D21b1930218560B6#code)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white?style=flat-square)](LICENSE)
 [![Built for Mantle Turing Test](https://img.shields.io/badge/hackathon-Mantle%20Turing%20Test%202026-white?style=flat-square)](https://dorahacks.io/hackathon/mantleturingtesthackathon2026/)
 
@@ -47,7 +48,7 @@ The hackathon is called "Turing Test." Mensa takes the name literally: the AI mu
 
 ---
 
-## Live state (Mantle Mainnet, all 6/6 contracts verified)
+## Live state (Mantle Mainnet, all 7/7 contracts verified)
 
 | Component | Address |
 |-----------|---------|
@@ -57,6 +58,7 @@ The hackathon is called "Turing Test." Mensa takes the name literally: the AI mu
 | Reputation | [`0x10A519fd1867120C5379C7f8016A4223826b4E5f`](https://mantlescan.xyz/address/0x10A519fd1867120C5379C7f8016A4223826b4E5f#code) |
 | BountyPool | [`0x06460f1cb540951e115A95257D59FEeFf9A55f39`](https://mantlescan.xyz/address/0x06460f1cb540951e115A95257D59FEeFf9A55f39#code) |
 | MensaBadges | [`0x22867d39E3e9891A4F76754AF9BD1B131661144E`](https://mantlescan.xyz/address/0x22867d39E3e9891A4F76754AF9BD1B131661144E#code) |
+| **MensaAgentIdentity (ERC-8004)** | [`0x6671E554Da8e874D7aF5F106D21b1930218560B6`](https://mantlescan.xyz/address/0x6671E554Da8e874D7aF5F106D21b1930218560B6#code) — agentId #1 |
 | mETH (Mantle native) | [`0xcDA86A272531e8640cD7F1a92c01839911B90bb0`](https://mantlescan.xyz/address/0xcDA86A272531e8640cD7F1a92c01839911B90bb0) |
 | USDY (Ondo) | [`0x5bE26527e817998A7206475496fDE1E68957c5A6`](https://mantlescan.xyz/address/0x5bE26527e817998A7206475496fDE1E68957c5A6) |
 

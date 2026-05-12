@@ -14,9 +14,22 @@ export default function Home() {
       {/* Hero */}
       <main className="relative z-10 max-w-6xl mx-auto px-6 pt-20 pb-16">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs text-[var(--fg-muted)] border border-[var(--border)] mb-8">
-            <span className="pulse" />
-            Live on Mantle Mainnet
+          <div className="flex flex-wrap items-center gap-2 mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs text-[var(--fg-muted)] border border-[var(--border)]">
+              <span className="pulse" />
+              Live on Mantle Mainnet
+            </div>
+            <a
+              href="https://mantlescan.xyz/address/0x6671E554Da8e874D7aF5F106D21b1930218560B6#code"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs text-[var(--fg-muted)] border border-[var(--border)] hover:text-white hover:border-[var(--accent)] transition"
+              title="ERC-8004 IdentityRegistry, agentId #1"
+            >
+              <span className="mono text-[var(--accent)]">ERC-8004</span>
+              <span className="text-[var(--fg-dim)]">·</span>
+              <span>agent #1</span>
+            </a>
           </div>
 
           <h1 className="text-5xl md:text-6xl font-medium tracking-tight leading-[1.05] mb-6">

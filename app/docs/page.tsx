@@ -40,6 +40,12 @@ const CONTRACTS = [
     role: 'Soulbound (non-transferable) ERC-721 badges minted automatically on milestones: First Vote, Beat AI 10x, Beat AI 100x, 5-Win Streak, Reputation 500, Reputation 1000, Top 10 Monthly.',
     risk: 'Transfer functions disabled (transfer reverts). Only TournamentVault can mint. No admin burn.',
   },
+  {
+    name: 'MensaAgentIdentity (ERC-8004)',
+    addr: ACTIVE_CHAIN.contracts.agentIdentity,
+    role: 'ERC-8004 IdentityRegistry implementation. The Mensa agent is registered as agentId #1 with a tokenURI pointing to a discoverable agent card (capabilities, services, model, contracts) served from /api/agent-card. Any A2A-compatible agent or protocol can read this NFT to discover what Mensa is and how to compose with it.',
+    risk: 'Spec-compliant with eips.ethereum.org/EIPS/eip-8004 — register / setAgentURI / setMetadata / getAgentWallet. EIP-712 wallet rotation deferred (standard ERC-721 transfer is sufficient for the MVP).',
+  },
 ]
 
 const STACK = [
