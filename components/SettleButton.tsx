@@ -1,8 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ACTIVE_CHAIN } from '@/lib/chains'
+
+// The settler role belongs to the deployer wallet that also owns + operates the
+// agent. Auto-settle runs in the GH Actions cron every 30 min, so this manual
+// panel is an admin override only — kept for emergencies and demo footage.
+const SETTLER_ADDRESS = '0x3a0Dd90212838f32a953Acd4B32596b62859324A'
 
 const VAULT_ABI = [
   {
@@ -26,17 +31,24 @@ interface SettleButtonProps {
 }
 
 export default function SettleButton({ roundId, startMethPrice, startUsdyPrice }: SettleButtonProps) {
-  const [methChange, setMethChange] = useState(5) // % change
+  const { address } = useAccount()
+  const [open, setOpen] = useState(false)
+  const [methChange, setMethChange] = useState(5)
   const [usdyChange, setUsdyChange] = useState(0.1)
   const [humanAlloc, setHumanAlloc] = useState(50)
 
   const { writeContract, data: txHash, isPending } = useWriteContract()
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
+  const isSettler = address && address.toLowerCase() === SETTLER_ADDRESS.toLowerCase()
+
+  // Only the settler wallet sees this panel. Regular voters never see it —
+  // settlement is fully automatic via the GH Actions cron.
+  if (!isSettler) return null
+
   const handleSettle = () => {
     const settleMeth = (BigInt(startMethPrice) * BigInt(Math.floor((100 + methChange) * 100))) / BigInt(10000)
     const settleUsdy = (BigInt(startUsdyPrice) * BigInt(Math.floor((100 + usdyChange) * 100))) / BigInt(10000)
-
     writeContract({
       address: ACTIVE_CHAIN.contracts.tournamentVault as `0x${string}`,
       abi: VAULT_ABI,
@@ -47,8 +59,8 @@ export default function SettleButton({ roundId, startMethPrice, startUsdyPrice }
 
   if (isSuccess) {
     return (
-      <div className="card p-4 text-center" style={{ borderColor: 'var(--accent)' }}>
-        <div className="text-xs text-[var(--accent)]">Round settled</div>
+      <div className="card p-3 text-center" style={{ borderColor: 'var(--accent)' }}>
+        <div className="text-xs text-[var(--accent)]">Round #{roundId} settled (manual)</div>
         <a
           href={`${ACTIVE_CHAIN.explorer}/tx/${txHash}`}
           target="_blank"
@@ -61,10 +73,34 @@ export default function SettleButton({ roundId, startMethPrice, startUsdyPrice }
     )
   }
 
+  // Collapsed: a discreet admin pill the settler can click open if they need
+  // to override auto-settlement (rare). Default state is closed so the page
+  // doesn't get cluttered with parameters non-admins don't need.
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-[10px] uppercase tracking-wider text-[var(--fg-dim)] hover:text-[var(--fg-muted)] transition px-2 py-1 rounded border border-[var(--border)] inline-flex items-center gap-1.5"
+        title="Settler-only admin override. Auto-settle cron handles this normally."
+      >
+        <span>⚙</span>
+        <span>Settler override #{roundId}</span>
+      </button>
+    )
+  }
+
   return (
-    <div className="card p-4 space-y-3">
-      <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
-        Settle Round #{roundId} (demo settlement)
+    <div className="card p-3 space-y-3 border-orange-400/30" style={{ background: 'rgba(251,146,60,0.04)' }}>
+      <div className="flex items-center justify-between">
+        <div className="text-[10px] uppercase tracking-wider text-orange-400">
+          Settler override · Round #{roundId}
+        </div>
+        <button onClick={() => setOpen(false)} className="text-[var(--fg-muted)] hover:text-white text-sm leading-none">×</button>
+      </div>
+
+      <div className="text-[10px] text-[var(--fg-dim)] leading-relaxed">
+        Auto-settle cron handles this every 30 min. Use this only if you need to manually close a
+        round with custom params (debug, demo footage, etc.).
       </div>
 
       <div className="grid grid-cols-3 gap-2 text-xs">
@@ -111,12 +147,8 @@ export default function SettleButton({ roundId, startMethPrice, startUsdyPrice }
       >
         {isPending && 'Confirm...'}
         {confirming && 'Settling...'}
-        {!isPending && !confirming && 'Settle (you = settler)'}
+        {!isPending && !confirming && 'Force settle now'}
       </button>
-
-      <div className="text-[9px] text-[var(--fg-dim)] leading-relaxed">
-        Settler is the deployer wallet. On mainnet, settlement uses Chainlink price feeds + median of votes.
-      </div>
     </div>
   )
 }
