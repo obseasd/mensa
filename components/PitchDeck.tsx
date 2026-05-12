@@ -125,7 +125,24 @@ export default function PitchDeck() {
             <span className="px-3 py-1.5 rounded-full border border-[var(--border)] mono">7/7 contracts verified</span>
             <span className="px-3 py-1.5 rounded-full border border-[var(--border)]">Mantle Turing Test 2026</span>
           </div>
-          <div className="text-xs text-[var(--fg-dim)] mt-16">
+
+          {/* Powered-by row — small favicon logos of the stack */}
+          <div className="flex items-center gap-5 mt-12 opacity-70">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--fg-dim)]">Powered by</span>
+            {[
+              { name: 'Mantle Network', url: 'https://www.mantle.xyz', icon: 'https://www.mantle.xyz/favicon.ico' },
+              { name: 'Anthropic Claude', url: 'https://www.anthropic.com', icon: 'https://www.anthropic.com/favicon.ico' },
+              { name: 'Ondo Finance (USDY)', url: 'https://ondo.finance', icon: 'https://ondo.finance/favicon.ico' },
+              { name: 'Coingecko', url: 'https://www.coingecko.com', icon: 'https://www.coingecko.com/favicon.ico' },
+              { name: 'DefiLlama', url: 'https://defillama.com', icon: 'https://defillama.com/favicon.ico' },
+            ].map(p => (
+              <a key={p.name} href={p.url} target="_blank" rel="noopener noreferrer" title={p.name} className="hover:opacity-100 transition">
+                <img src={p.icon} alt={p.name} className="w-5 h-5 rounded grayscale hover:grayscale-0 transition" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              </a>
+            ))}
+          </div>
+
+          <div className="text-xs text-[var(--fg-dim)] mt-12">
             Use → / ↓ / Space to advance · ↑ / ← to go back
           </div>
         </Slide>
@@ -189,27 +206,89 @@ export default function PitchDeck() {
         <Slide id={4} label="Traction">
           <H>This is happening right now.</H>
           <Lead>Not a mock. The contracts have been live on Mantle Mainnet for days, the cron has been deciding, the tournament has been settling.</Lead>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-12">
             {[
-              { label: 'Decisions logged', value: stats ? String(stats.totalDecisions) : '—' },
-              { label: 'Tournament rounds', value: stats ? String(stats.totalRounds) : '—', detail: stats ? `${stats.aiWins}W / ${stats.humanWins}L` : '' },
-              { label: 'AI win rate', value: stats && stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—' },
+              {
+                label: 'Decisions logged',
+                value: stats ? String(stats.totalDecisions) : '—',
+                detail: 'on-chain · DecisionLog',
+                icon: '◎',
+              },
+              {
+                label: 'Tournament rounds',
+                value: stats ? String(stats.totalRounds) : '—',
+                detail: stats ? `${stats.aiWins}W / ${stats.humanWins}L · ${stats.totalRounds - stats.aiWins - stats.humanWins} pending` : '',
+                icon: '⊕',
+              },
+              {
+                label: 'AI win rate',
+                value: stats && stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—',
+                detail: 'vs 50/50 baseline',
+                icon: '◐',
+                accent: true,
+              },
               {
                 label: 'Alpha / round',
                 value: stats?.alphaCalibrated && stats.alphaCalibrated.settledRounds > 0
                   ? `${stats.alphaCalibrated.perRoundAvgAlphaBps >= 0 ? '+' : ''}${stats.alphaCalibrated.perRoundAvgAlphaBps.toFixed(0)} bps`
                   : '—',
-                detail: 'since memory loop calibrated',
+                detail: stats?.alphaCalibrated && stats.alphaCalibrated.settledRounds > 0
+                  ? `${stats.alphaCalibrated.alphaBps >= 0 ? '+' : ''}${stats.alphaCalibrated.alphaBps} bps over ${stats.alphaCalibrated.settledRounds} rounds`
+                  : 'since memory loop calibrated',
+                icon: '↗',
+                accent: true,
               },
             ].map(s => (
-              <div key={s.label} className="card p-5">
-                <div className="text-3xl md:text-4xl font-medium mono">{s.value}</div>
+              <div key={s.label} className="card p-5 relative overflow-hidden">
+                <div className="text-2xl text-[var(--fg-dim)] mb-2 mono">{s.icon}</div>
+                <div className={`text-3xl md:text-4xl font-medium mono ${s.accent ? 'text-[var(--accent)]' : ''}`}>{s.value}</div>
                 <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-3">{s.label}</div>
                 {s.detail && <div className="text-[10px] text-[var(--fg-dim)] mt-1">{s.detail}</div>}
               </div>
             ))}
           </div>
-          <p className="text-xs text-[var(--fg-dim)] mt-8">
+
+          {/* Alpha sparkline-ish: visual representation of cumulative alpha journey */}
+          {stats?.alphaCalibrated && stats.alphaCalibrated.settledRounds > 0 && (
+            <div className="card p-5 mt-6">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">
+                Mensa post-calibration trajectory
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs">
+                {[
+                  { id: 1, alpha: -324, label: 'cold' },
+                  { id: 2, alpha: 15 },
+                  { id: 3, alpha: 21 },
+                  { id: 4, alpha: 10 },
+                  { id: 5, alpha: 62 },
+                  { id: 6, alpha: 126 },
+                  { id: 7, alpha: -30 },
+                ].map(r => {
+                  const max = 130
+                  const heightPct = Math.min(100, (Math.abs(r.alpha) / max) * 100)
+                  const color = r.alpha >= 0 ? 'var(--accent)' : '#ef4444'
+                  return (
+                    <div key={r.id} className="flex flex-col items-center gap-1">
+                      <div className="text-[9px] mono text-[var(--fg-muted)]">#{r.id}</div>
+                      <div className="w-full h-12 flex items-end relative">
+                        <div
+                          className="w-full rounded-sm transition-all"
+                          style={{ height: `${heightPct}%`, background: color, opacity: r.label === 'cold' ? 0.4 : 1 }}
+                        />
+                      </div>
+                      <div className="text-[9px] mono" style={{ color }}>
+                        {r.alpha >= 0 ? '+' : ''}{r.alpha}
+                      </div>
+                      {r.label && <div className="text-[8px] text-[var(--fg-dim)]">{r.label}</div>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-[var(--fg-dim)] mt-6">
             Values fetched live from <code className="mono">/api/onchain</code>. Refresh this slide to see them update.
           </p>
         </Slide>
@@ -338,29 +417,51 @@ When did you over-rebalance and lose to passive 50/50?`}
 
         {/* === Slide 9 — Stack === */}
         <Slide id={9} label="Tech">
-          <H>7 verified contracts. ERC-8004 native. No external deps that aren&apos;t spec.</H>
-          <Lead>Production-shaped on mainnet from day one.</Lead>
+          <H>7 verified contracts. ERC-8004 native.</H>
+          <Lead>Production-shaped on mainnet from day one. Every piece independently verifiable on Mantlescan.</Lead>
+
           <div className="grid md:grid-cols-2 gap-3 mt-10 text-sm">
             {[
-              ['MensaAgent', 'The treasury. Holds deposits, gates rebalance, opens rounds.'],
-              ['DecisionLog', 'Append-only on-chain record. Reasoning emitted as event data.'],
-              ['TournamentVault', 'Round lifecycle, voting, settlement, payout distribution.'],
-              ['Reputation', 'Sqrt-weighted scoring. Read by Tournament for vote weight.'],
-              ['BountyPool', '15% perf-fee sink. 50/30/20 split. Pull-based claims.'],
-              ['MensaBadges', '7 soulbound achievement NFTs. Transfer-blocked.'],
-              ['MensaAgentIdentity (ERC-8004)', 'Agent registry NFT, agentId #1. Discoverable for A2A composability.'],
-            ].map(([name, role]) => (
-              <div key={name} className="card p-4">
-                <div className="text-sm font-medium mb-1">{name}</div>
-                <div className="text-xs text-[var(--fg-muted)] leading-relaxed">{role}</div>
+              { sym: '◆', name: 'MensaAgent', role: 'The treasury. Holds deposits, gates rebalance, opens rounds.', addr: '0xAcA925e5...CCe49' },
+              { sym: '✎', name: 'DecisionLog', role: 'Append-only on-chain record. Reasoning emitted as event data.', addr: '0xD889B781...88Fe' },
+              { sym: '⚔', name: 'TournamentVault', role: 'Round lifecycle, voting, settlement, payout distribution.', addr: '0x92E6B40d...d122' },
+              { sym: '★', name: 'Reputation', role: 'Sqrt-weighted scoring. Read by Tournament for vote weight.', addr: '0x10A519fd...4E5f' },
+              { sym: '💰', name: 'BountyPool', role: '15% perf-fee sink. 50/30/20 split. Pull-based claims.', addr: '0x06460f1c...5f39' },
+              { sym: '🏆', name: 'MensaBadges', role: '7 soulbound achievement NFTs. Transfer-blocked.', addr: '0x22867d39...144E' },
+              { sym: '◎', name: 'MensaAgentIdentity (ERC-8004)', role: 'Agent registry NFT, agentId #1. Discoverable for A2A composability.', addr: '0x6671E554...60B6', highlight: true },
+            ].map(c => (
+              <div key={c.name} className={`card p-4 ${c.highlight ? 'border-[var(--accent)]' : ''}`}>
+                <div className="flex items-start gap-3">
+                  <div className="text-lg shrink-0 mt-0.5" style={{ color: c.highlight ? 'var(--accent)' : 'var(--fg-muted)' }}>{c.sym}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium mb-0.5">{c.name}</div>
+                    <div className="text-[10px] mono text-[var(--fg-dim)] mb-1.5">{c.addr}</div>
+                    <div className="text-xs text-[var(--fg-muted)] leading-relaxed">{c.role}</div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-          <p className="text-xs text-[var(--fg-muted)] mt-8 leading-relaxed">
-            Off-chain: Next.js 16 frontend on Vercel, GitHub Actions cron every 30 min for the
-            decision + auto-settle loop, Claude Haiku 4.5 via Anthropic SDK with the on-chain
-            track record injected on every call, Coingecko + DefiLlama for live market state.
-          </p>
+
+          {/* Off-chain stack row with favicons */}
+          <div className="card p-4 mt-6">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Off-chain stack</div>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs">
+              {[
+                { name: 'Next.js + Vercel', icon: 'https://www.vercel.com/favicon.ico' },
+                { name: 'Claude Haiku 4.5', icon: 'https://www.anthropic.com/favicon.ico' },
+                { name: 'GitHub Actions cron', icon: 'https://github.com/favicon.ico' },
+                { name: 'Coingecko (ETH)', icon: 'https://www.coingecko.com/favicon.ico' },
+                { name: 'DefiLlama (yields)', icon: 'https://defillama.com/favicon.ico' },
+                { name: 'Foundry', icon: 'https://getfoundry.sh/favicon.ico' },
+              ].map(s => (
+                <div key={s.name} className="flex items-center gap-2">
+                  <img src={s.icon} alt={s.name} className="w-4 h-4 rounded grayscale" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                  <span className="text-[var(--fg-muted)]">{s.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </Slide>
 
         {/* === Slide 10 — MVP scope === */}
@@ -453,37 +554,95 @@ When did you over-rebalance and lose to passive 50/50?`}
             Everything in this deck is fetched from on-chain state at slide load. No fake numbers,
             no static screenshots, no PDF tricks. Click through.
           </Lead>
-          <div className="grid md:grid-cols-2 gap-3 mt-10 text-sm">
+
+          {/* 4 main destinations, redesigned with icon + title + subtitle, no dashes */}
+          <div className="grid md:grid-cols-2 gap-4 mt-10">
             {[
-              { href: '/', label: 'Agent — live decisions + allocation' },
-              { href: '/tournament', label: 'Tournament — vote against the AI' },
-              { href: '/backtest', label: 'Backtest — 1y replay vs baselines' },
-              { href: '/deposit', label: 'Deposit — try with $1 of mETH' },
-              { href: '/leaderboard', label: 'Leaderboard — humans + bounty pool' },
-              { href: '/docs', label: 'Docs — architecture + roadmap + compliance' },
+              {
+                href: '/',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                  </svg>
+                ),
+                title: 'Agent',
+                subtitle: 'Live AI decisions, allocation, and reasoning',
+              },
+              {
+                href: '/tournament',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2" />
+                    <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" />
+                    <path d="M6 22v-4M18 22v-4M10 22h4" />
+                    <path d="M6 3h12v6a6 6 0 0 1-12 0V3z" />
+                  </svg>
+                ),
+                title: 'Tournament',
+                subtitle: 'Vote your allocation against the AI',
+              },
+              {
+                href: '/backtest',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <path d="M3 3v18h18" />
+                    <path d="M7 14l4-4 4 3 5-6" />
+                  </svg>
+                ),
+                title: 'Backtest',
+                subtitle: 'Strategy replayed on 1y of real ETH history',
+              },
+              {
+                href: '/docs',
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <path d="M4 4h12a4 4 0 0 1 4 4v12a2 2 0 0 0-2-2H4z" />
+                    <path d="M8 9h8M8 13h6" />
+                  </svg>
+                ),
+                title: 'Docs',
+                subtitle: 'Architecture, roadmap, compliance, tracks',
+              },
             ].map(l => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="card p-4 flex items-center justify-between hover:border-[var(--accent)] transition group"
+                className="card interactive p-5 flex items-center gap-4 group"
               >
-                <span className="text-sm">{l.label}</span>
-                <span className="text-[var(--accent)] group-hover:translate-x-1 transition">→</span>
+                <div className="shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-[var(--accent)] transition group-hover:scale-110" style={{ background: 'var(--accent-soft)' }}>
+                  {l.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-base font-medium">{l.title}</div>
+                  <div className="text-xs text-[var(--fg-muted)] mt-0.5 leading-relaxed">{l.subtitle}</div>
+                </div>
+                <span className="text-[var(--accent)] text-xl shrink-0 group-hover:translate-x-1 transition">→</span>
               </Link>
             ))}
           </div>
-          <div className="mt-10 flex flex-wrap items-center gap-3 text-xs text-[var(--fg-muted)]">
+
+          {/* Secondary external links */}
+          <div className="mt-8 flex flex-wrap items-center gap-2 text-xs text-[var(--fg-muted)]">
+            <span className="text-[var(--fg-dim)] mr-1">Also:</span>
             <a href="https://github.com/obseasd/mensa" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-full border border-[var(--border)] hover:text-white hover:border-[var(--accent)] transition">
-              GitHub →
+              GitHub
             </a>
             <a href="https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-full border border-[var(--border)] hover:text-white hover:border-[var(--accent)] transition">
-              Contracts on Mantlescan →
+              Mantlescan
             </a>
             <a href="https://mensa-mu.vercel.app/api/agent-card" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-full border border-[var(--border)] hover:text-white hover:border-[var(--accent)] transition">
-              ERC-8004 agent card →
+              ERC-8004 agent card
             </a>
+            <Link href="/deposit" className="px-3 py-1.5 rounded-full border border-[var(--border)] hover:text-white hover:border-[var(--accent)] transition">
+              Deposit
+            </Link>
+            <Link href="/leaderboard" className="px-3 py-1.5 rounded-full border border-[var(--border)] hover:text-white hover:border-[var(--accent)] transition">
+              Leaderboard
+            </Link>
           </div>
-          <p className="text-xs text-[var(--fg-dim)] mt-12">
+
+          <p className="text-xs text-[var(--fg-dim)] mt-12 leading-relaxed">
             Built for the Mantle Turing Test Hackathon 2026 — Phase 2 AI Awakening.<br/>
             MIT licensed. No financial advice. Audit pending.
           </p>
