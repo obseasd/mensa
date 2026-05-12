@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
+import { useAccount, useChainId, useWriteContract, useReadContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 import { mantle, mantleSepolia } from '@/lib/wagmi'
 import { showToast } from './Toast'
@@ -13,6 +13,17 @@ const VAULT_ABI = [
     stateMutability: 'nonpayable',
     inputs: [{ name: 'roundId', type: 'uint256' }, { name: 'allocMeth', type: 'uint8' }],
     outputs: [],
+  },
+  {
+    name: 'votes',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'roundId', type: 'uint256' }, { name: 'voter', type: 'address' }],
+    outputs: [
+      { name: 'allocMeth', type: 'uint8' },
+      { name: 'weight', type: 'uint256' },
+      { name: 'timestamp', type: 'uint256' },
+    ],
   },
 ] as const
 
@@ -42,7 +53,7 @@ function explainError(e: unknown): string {
 }
 
 export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
-  const { isConnected } = useAccount()
+  const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { switchChainAsync } = useSwitchChain()
   const [allocation, setAllocation] = useState(aiAllocMeth)
@@ -54,6 +65,19 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
   const isMantle = chainId === mantle.id || chainId === mantleSepolia.id
+
+  // Read this voter's existing vote on this round (timestamp != 0 means already voted).
+  // This survives page refresh / wallet reconnect.
+  const { data: existingVote, refetch: refetchVote } = useReadContract({
+    address: ACTIVE_CHAIN.contracts.tournamentVault as `0x${string}`,
+    abi: VAULT_ABI,
+    functionName: 'votes',
+    args: address ? [BigInt(roundId), address] : undefined,
+    query: { enabled: !!address && isMantle, refetchInterval: 5000 },
+  })
+  const hasVoted = !!existingVote && Number(existingVote[2]) > 0
+  const myAllocOnChain = existingVote ? Number(existingVote[0]) : 0
+  const myWeightOnChain = existingVote ? Number(existingVote[1]) : 0
 
   // Live simulation when allocation changes
   useEffect(() => {
@@ -77,7 +101,10 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
       { href: `${ACTIVE_CHAIN.explorer}/tx/${txHash}`, label: 'View on Mantlescan' },
     )
     setSubmitting(false)
-  }, [isSuccess, txHash, allocation, roundId])
+    // Pick up the new on-chain vote so the success card persists across
+    // re-renders even after the local txHash state is gone.
+    refetchVote()
+  }, [isSuccess, txHash, allocation, roundId, refetchVote])
 
   const ensureChain = async (): Promise<boolean> => {
     try {
@@ -109,31 +136,42 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
 
   const delta = allocation - aiAllocMeth
 
-  if (isSuccess) {
+  // Show the success card whenever an existing vote is recorded on-chain,
+  // not just when the local tx is fresh. This way the state survives wallet
+  // disconnect / page refresh.
+  if (hasVoted || isSuccess) {
+    const displayAlloc = hasVoted ? myAllocOnChain : allocation
     return (
       <div className="card p-5" style={{ borderColor: 'var(--accent)' }}>
         <div className="flex items-center gap-2 mb-2">
           <span className="pulse" />
-          <span className="text-xs text-[var(--accent)]">Vote submitted</span>
+          <span className="text-xs text-[var(--accent)]">Vote recorded on-chain</span>
         </div>
         <p className="text-sm">
-          Your allocation: <span className="mono">{allocation}% mETH</span>
+          Your allocation: <span className="mono">{displayAlloc}% mETH</span>
           {' '}vs AI&apos;s <span className="mono">{aiAllocMeth}% mETH</span>
         </p>
+        {hasVoted && myWeightOnChain > 0 && (
+          <p className="text-[11px] text-[var(--fg-muted)] mt-1">
+            Vote weight: <span className="mono text-[var(--fg)]">{myWeightOnChain}x</span> (sqrt of your reputation)
+          </p>
+        )}
         <p className="text-[11px] text-[var(--fg-muted)] mt-2 leading-relaxed">
           Round settles in ~24h. If your allocation produces a better return than the AI&apos;s
           at the settled prices, you earn from the bounty pool. Watch{' '}
           <a href="/leaderboard" className="hover:text-[var(--accent)] underline">/leaderboard</a>
           {' '}for your reputation.
         </p>
-        <a
-          href={`${ACTIVE_CHAIN.explorer}/tx/${txHash}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-[var(--fg-muted)] mono hover:text-[var(--accent)] transition mt-3 inline-block"
-        >
-          {txHash?.slice(0, 18)}...{txHash?.slice(-6)}
-        </a>
+        {txHash && (
+          <a
+            href={`${ACTIVE_CHAIN.explorer}/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[var(--fg-muted)] mono hover:text-[var(--accent)] transition mt-3 inline-block"
+          >
+            {txHash.slice(0, 18)}...{txHash.slice(-6)}
+          </a>
+        )}
       </div>
     )
   }
