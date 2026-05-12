@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { ACTIVE_CHAIN } from '@/lib/chains'
 import { mantle, mantleSepolia } from '@/lib/wagmi'
+import { showToast } from './Toast'
 
 const VAULT_ABI = [
   {
@@ -29,15 +30,27 @@ interface SimResult {
   winner: 'AI' | 'Human' | 'Tie'
 }
 
+function explainError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e)
+  if (msg.match(/user rejected|user denied/i)) return 'You cancelled the vote.'
+  if (msg.match(/chain.*mismatch|wrong network/i)) return 'Wrong chain — please switch in your wallet.'
+  if (msg.match(/insufficient funds/i)) return 'Insufficient MNT for gas.'
+  if (msg.match(/already voted/i)) return 'You already voted on this round.'
+  if (msg.match(/insufficient stake/i)) return 'You need a deposit in the agent to be eligible to vote.'
+  if (msg.length > 140) return msg.slice(0, 140) + '...'
+  return msg
+}
+
 export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
   const { isConnected } = useAccount()
   const chainId = useChainId()
+  const { switchChainAsync } = useSwitchChain()
   const [allocation, setAllocation] = useState(aiAllocMeth)
-  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [sim, setSim] = useState<SimResult | null>(null)
   const [simLoading, setSimLoading] = useState(false)
 
-  const { writeContract, isPending, data: txHash } = useWriteContract()
+  const { writeContractAsync, isPending, data: txHash } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
 
   const isMantle = chainId === mantle.id || chainId === mantleSepolia.id
@@ -55,14 +68,43 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
     return () => clearTimeout(t)
   }, [allocation, aiAllocMeth])
 
-  const handleVote = () => {
-    writeContract({
-      address: ACTIVE_CHAIN.contracts.tournamentVault as `0x${string}`,
-      abi: VAULT_ABI,
-      functionName: 'voteHuman',
-      args: [BigInt(roundId), allocation],
-    })
-    setSubmitted(true)
+  // Success toast once tx is confirmed
+  useEffect(() => {
+    if (!isSuccess || !txHash) return
+    showToast(
+      `Voted ${allocation}% mETH on round #${roundId}.`,
+      'success',
+      { href: `${ACTIVE_CHAIN.explorer}/tx/${txHash}`, label: 'View on Mantlescan' },
+    )
+    setSubmitting(false)
+  }, [isSuccess, txHash, allocation, roundId])
+
+  const ensureChain = async (): Promise<boolean> => {
+    try {
+      await switchChainAsync({ chainId: ACTIVE_CHAIN.id })
+      return true
+    } catch {
+      showToast(`Switch to ${ACTIVE_CHAIN.name} cancelled`, 'error')
+      return false
+    }
+  }
+
+  const handleVote = async () => {
+    if (!(await ensureChain())) return
+    setSubmitting(true)
+    try {
+      await writeContractAsync({
+        chainId: ACTIVE_CHAIN.id,
+        address: ACTIVE_CHAIN.contracts.tournamentVault as `0x${string}`,
+        abi: VAULT_ABI,
+        functionName: 'voteHuman',
+        args: [BigInt(roundId), allocation],
+      })
+      // success toast fires from the useEffect when receipt confirms
+    } catch (e) {
+      setSubmitting(false)
+      showToast(`Vote failed: ${explainError(e)}`, 'error')
+    }
   }
 
   const delta = allocation - aiAllocMeth
@@ -74,12 +116,21 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
           <span className="pulse" />
           <span className="text-xs text-[var(--accent)]">Vote submitted</span>
         </div>
-        <p className="text-sm">Your allocation: <span className="mono">{allocation}% mETH</span></p>
+        <p className="text-sm">
+          Your allocation: <span className="mono">{allocation}% mETH</span>
+          {' '}vs AI&apos;s <span className="mono">{aiAllocMeth}% mETH</span>
+        </p>
+        <p className="text-[11px] text-[var(--fg-muted)] mt-2 leading-relaxed">
+          Round settles in ~24h. If your allocation produces a better return than the AI&apos;s
+          at the settled prices, you earn from the bounty pool. Watch{' '}
+          <a href="/leaderboard" className="hover:text-[var(--accent)] underline">/leaderboard</a>
+          {' '}for your reputation.
+        </p>
         <a
           href={`${ACTIVE_CHAIN.explorer}/tx/${txHash}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-[var(--fg-muted)] mono hover:text-[var(--accent)] transition mt-2 inline-block"
+          className="text-xs text-[var(--fg-muted)] mono hover:text-[var(--accent)] transition mt-3 inline-block"
         >
           {txHash?.slice(0, 18)}...{txHash?.slice(-6)}
         </a>
@@ -90,7 +141,7 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
   if (!isConnected) {
     return (
       <div className="card p-5">
-        <div className="text-xs text-[var(--fg-muted)] mb-2">Connect your wallet to vote on this round</div>
+        <div className="text-xs text-[var(--fg-muted)]">Connect your wallet to vote on this round</div>
       </div>
     )
   }
@@ -98,12 +149,20 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
   if (!isMantle) {
     return (
       <div className="card p-5">
-        <div className="text-xs text-orange-400">Switch to Mantle Sepolia to vote</div>
+        <div className="text-xs text-orange-400">Switch to Mantle Mainnet (chain 5000) to vote</div>
       </div>
     )
   }
 
   const winColor = sim?.winner === 'Human' ? 'var(--accent)' : sim?.winner === 'AI' ? '#f87171' : '#a0a0a0'
+
+  // Button label — always renders something, never empty
+  let buttonLabel: string
+  let buttonDisabled = false
+  if (isPending) { buttonLabel = 'Confirm in wallet...'; buttonDisabled = true }
+  else if (isConfirming) { buttonLabel = 'Confirming on-chain...'; buttonDisabled = true }
+  else if (submitting) { buttonLabel = 'Preparing...'; buttonDisabled = true }
+  else { buttonLabel = `Vote ${allocation}% mETH` }
 
   return (
     <div className="card p-5">
@@ -185,12 +244,10 @@ export default function VoteRound({ roundId, aiAllocMeth }: VoteRoundProps) {
 
       <button
         onClick={handleVote}
-        disabled={isPending || isConfirming || submitted}
+        disabled={buttonDisabled}
         className="btn-accent w-full text-sm"
       >
-        {isPending && 'Confirm in wallet...'}
-        {isConfirming && 'Confirming on-chain...'}
-        {!isPending && !isConfirming && !submitted && `Vote ${allocation}% mETH`}
+        {buttonLabel}
       </button>
 
       <p className="text-[10px] text-[var(--fg-dim)] mt-3">
