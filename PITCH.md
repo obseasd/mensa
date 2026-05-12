@@ -1,0 +1,235 @@
+# Mensa — Pitch deck
+
+> Live interactive version: **https://mensa-mu.vercel.app/pitch**
+>
+> This markdown is a plain-text mirror. If you'd rather drop content into
+> Google Slides, Notion, or Pitch.com, copy from here.
+
+---
+
+## 01 · Cover
+
+**The AI treasury that proves itself.**
+
+Intelligent RWA portfolio management agent on Mantle. Allocates between mETH
+(Mantle liquid-staked ETH) and USDY (Ondo tokenized US Treasury bills), with
+every decision logged on-chain and challenged by humans in a verifiable Turing
+tournament.
+
+- Live on Mantle Mainnet
+- ERC-8004 · agent #1
+- 7/7 contracts verified
+- Mantle Turing Test 2026
+
+---
+
+## 02 · Problem
+
+**You can't trust an AI with your money if you can't verify its reasoning.**
+
+DeFi has billions in autonomous protocols. AI agents are starting to manage
+real capital. But every existing AI treasury is a black box: it acts, you
+trust, you hope.
+
+- **No reasoning trail.** You see "the AI rebalanced." You don't see why.
+- **No benchmark.** No way to measure if the AI is actually any good.
+- **No accountability.** If it underperforms, no human is on the line — including the AI.
+
+---
+
+## 03 · Solution
+
+**Mensa: every decision logged, explained, and challenged.**
+
+We take the hackathon name literally. The agent must prove, statistically and
+on-chain, that it allocates better than humans on the same data. Three
+primitives.
+
+1. **Logged** — Every allocation decision is written to the DecisionLog
+   contract: action, confidence, full reasoning text emitted as event data.
+2. **Explained** — Claude Haiku 4.5 generates a plain-English justification
+   for every rebalance. No black-box scores.
+3. **Challenged** — The TournamentVault pits the AI against humans on
+   identical inputs. After 24h, the higher-return allocation wins, settled
+   on-chain.
+
+---
+
+## 04 · Traction (live numbers)
+
+| Metric | Current value |
+|--------|---------------|
+| Decisions logged | live from `/api/onchain` |
+| Tournament rounds | live |
+| AI win rate | live |
+| Alpha / round (since memory loop calibrated) | live |
+
+These values are fetched live on every page load — not screenshots, not mocks.
+
+Verified contracts: see https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code
+
+---
+
+## 05 · Innovation 1 — The memory loop
+
+**How Claude learns without retraining.**
+
+Before every decision, the agent reads its own on-chain track record and
+injects it into Claude's prompt. Self-correction emerges without a single
+training pipeline.
+
+Sample prompt context that ships on every Claude call:
+
+```
+Track record (since memory loop calibrated, 6 rounds):
+  Cumulative alpha vs 50/50 baseline: +204 bps
+  Per-round average: +34 bps
+
+Recent rounds:
+  Round #7: you=20% mETH (19bps) | 50/50=49bps | optimal=100% mETH (97bps) | you-vs-base=-30bps
+  Round #6: you=0% mETH (0bps) | 50/50=-126bps | optimal=0% mETH (0bps) | you-vs-base=+126bps
+  ...
+
+Round #1 was a -324bps loss made before this feedback loop existed —
+note it but don't let it dominate your current strategy.
+
+Reflect: when did you under-allocate to the winning asset?
+When did you over-rebalance and lose to passive 50/50?
+```
+
+Cheap. Transparent. No ML infra.
+
+---
+
+## 06 · Innovation 2 — The Turing tournament
+
+**Humans challenge the AI on identical data.**
+
+Each rebalance opens a 24h round. Anyone with a stake can vote their own
+mETH/USDY split. After settlement, whoever produced the better return wins
+on-chain. No subjective judging, no leaderboard cooking.
+
+- **Sqrt-weighted voting.** Vote weight = sqrt(reputation). 100 Sybil wallets
+  at rep=1 sum to weight 100; one whale at rep=10000 also gets weight 100.
+  Diminishing returns kill bot dominance.
+- **15% performance fee.** On yield, never principal. Splits 50/30/20:
+  winners / reputation pool / ops. Humans who beat the AI get paid in MNT.
+- **Soulbound badges.** 7 milestones (First Vote, Beat AI 10x/100x, 5-Win
+  Streak, Rep 500/1000, Top 10 Monthly) minted as non-transferable ERC-721.
+
+---
+
+## 07 · Why we're honest — Round #1 was a disaster
+
+We didn't ship a pitch deck where the AI looks like a genius. The first round
+on mainnet was a 19.4% loss. We learned in public.
+
+| Round | AI alloc | Alpha vs 50/50 |
+|-------|----------|----------------|
+| #1 | 60% mETH | **−324 bps** (cold start, ETH crashed) |
+| #2 | 35% mETH | +15 bps |
+| #3 | 25% mETH | +21 bps |
+| #4 | 15% mETH | +10 bps |
+| #5 | 5% mETH | +62 bps |
+| #6 | 0% mETH | +126 bps |
+| #7 | 20% mETH | −30 bps |
+
+Round #1 cold-start: 60% mETH, ETH crashed 19%, the AI ate the loss.
+
+Round #2 onward — once the memory loop was active — the AI shifted defensive
+(60 → 35 → 25 → 15 → 5 → 0% mETH) and beat the baseline on every round until
+#7.
+
+**Net since calibrated: +204 bps cumulative, +34 bps per round.**
+
+---
+
+## 08 · Beyond live rounds — backtest
+
+Seven on-chain rounds isn't a track record. We replay Mensa's strategy
+against three baselines (passive 50/50, 100% mETH HODL, 100% USDY) on a year
+of Coingecko ETH prices.
+
+See https://mensa-mu.vercel.app/backtest for the live, interactive version.
+
+**Honest finding.** In a strong directional bull (ETH +15%), allocation
+strategies always lag pure HODL. Mensa cut max drawdown by 5pp at the cost of
+some upside — risk-adjusted, that's the actual trade.
+
+Mensa's value prop is chop and bear regimes, not bull tops. The page is
+explicit about this. No cherry-picked window.
+
+---
+
+## 09 · The stack
+
+**7 verified contracts. ERC-8004 native. Production-shaped on mainnet from
+day one.**
+
+| Contract | Role |
+|----------|------|
+| MensaAgent | The treasury. Holds deposits, gates rebalance, opens rounds. |
+| DecisionLog | Append-only on-chain record. Reasoning emitted as event data. |
+| TournamentVault | Round lifecycle, voting, settlement, payout distribution. |
+| Reputation | Sqrt-weighted scoring. Read by Tournament for vote weight. |
+| BountyPool | 15% perf-fee sink. 50/30/20 split. Pull-based claims. |
+| MensaBadges | 7 soulbound achievement NFTs. Transfer-blocked. |
+| MensaAgentIdentity (ERC-8004) | Agent registry NFT, agentId #1. Discoverable for A2A composability. |
+
+Off-chain: Next.js 16 frontend on Vercel, GitHub Actions cron every 30 min
+for the decision + auto-settle loop, Claude Haiku 4.5 via Anthropic SDK with
+the on-chain track record injected on every call, Coingecko + DefiLlama for
+live market state.
+
+---
+
+## 10 · Honest scope — what we know we don't have yet
+
+A hackathon submission that pretends it's production is a hackathon
+submission that lies.
+
+| Status | Gap | Notes |
+|--------|-----|-------|
+| **NOW** | Notional rebalancing | executeAllocation updates a target % and opens a round but does not swap tokens. Mantle DEX liquidity for mETH/USDY swaps is thin (Merchant Moe V2: mETH/USDC ≈ $6 TVL, USDC/USDY ≈ $22). Real execution is gated less on our code and more on DEX maturity. |
+| **NOW** | Per-user balance tracker (not shares) | Unified counter, safe at small TVL, multi-user mainnet needs the ERC-4626 upgrade. |
+| **NEXT** | ERC-4626 share model + Velora swap | Replace the counter with shares minted at deposit. Route executeAllocation through Velora aggregator with slippage caps. Designed, not deployed. |
+| **NEXT** | Real human-vote aggregation in settle | Auto-settle passes 50% as the human aggregate when no voters showed up. With active voting we compute reputation-weighted median off-chain and pass it in. |
+| **LATER** | Hybrid AI / human steering | Wired today: Claude reads the human consensus as a soft input. With more voters this becomes a real co-allocation mechanism. |
+
+---
+
+## 11 · Why Mensa fits the Mantle Turing Test
+
+The hackathon brief asked for autonomous agents that compete on-chain,
+verify reasoning, and use Mantle's native RWAs. Mensa is that, line by line.
+
+| Track | Mensa fit |
+|-------|-----------|
+| **AI × RWA (primary)** | Path B — end-user-facing intelligent RWA portfolio agent. mETH (Mantle LST) + USDY (Ondo T-bills) are exactly the RWAs the track names. |
+| **Grand Champion** | 7 verified contracts (Tech Depth), Turing tournament + verifiable alpha + memory loop (Innovation), Mantle-native (Ecosystem), live deployed (Completeness). |
+| **AI Alpha & Data** | Path B — trading strategy with verifiable on-chain alpha. Every return computed from contract reads, alpha measured against passive baseline. |
+| **Best UI/UX** | Dark Mantle-aligned design. AI reasoning surfaced. Glossary tooltips. Responsive. Live data everywhere. |
+| **20 Project Deployment Award** | 7/7 verified on Mantlescan, AI-powered function callable on-chain, public frontend, open MIT repo with README + Foundry tests. |
+
+---
+
+## 12 · Try it — now, live
+
+Everything in this deck is fetched from on-chain state at slide load. No fake
+numbers, no static screenshots, no PDF tricks.
+
+- https://mensa-mu.vercel.app — Agent (live decisions + allocation)
+- https://mensa-mu.vercel.app/tournament — Tournament (vote against the AI)
+- https://mensa-mu.vercel.app/backtest — Backtest (1y replay vs baselines)
+- https://mensa-mu.vercel.app/deposit — Deposit (try with $1 of mETH)
+- https://mensa-mu.vercel.app/leaderboard — Leaderboard (humans + bounty pool)
+- https://mensa-mu.vercel.app/docs — Docs (architecture + roadmap + compliance)
+
+**Links**
+
+- GitHub: https://github.com/obseasd/mensa
+- Verified contracts: https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code
+- ERC-8004 agent card: https://mensa-mu.vercel.app/api/agent-card
+
+Built for the Mantle Turing Test Hackathon 2026 — Phase 2 AI Awakening. MIT
+licensed. No financial advice. Audit pending.

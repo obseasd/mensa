@@ -174,6 +174,7 @@ export default function Home() {
           <div>
             <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Resources</div>
             <ul className="space-y-1.5 text-[var(--fg-muted)]">
+              <li><Link href="/pitch" className="hover:text-white transition">Pitch deck</Link></li>
               <li><Link href="/docs" className="hover:text-white transition">Architecture & docs</Link></li>
               <li><Link href="/docs#mvp-scope" className="hover:text-white transition">MVP scope & roadmap</Link></li>
               <li>

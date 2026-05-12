@@ -18,7 +18,7 @@ Mensa is an **intelligent RWA portfolio management agent** on Mantle. It allocat
 
 > The hackathon is called "Turing Test." Mensa takes it literally: the AI must prove, on-chain, that it allocates better than humans on the same data.
 
-**Live demo:** https://mensa-mu.vercel.app
+**Live demo:** https://mensa-mu.vercel.app · **Pitch deck:** https://mensa-mu.vercel.app/pitch
 
 **Built for:** DAO treasuries · Sophisticated DeFi savers · RWA-backed protocols
 
