@@ -128,16 +128,92 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-[var(--border)] mt-20">
-        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-[var(--fg-muted)]">
-          <div className="flex items-center gap-4">
-            <span>mensa</span>
-            <a href="https://github.com/obseasd/mensa" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">GitHub</a>
-            <a href="https://mantlescan.xyz/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Mantlescan</a>
+      <footer className="relative z-10 border-t border-[var(--border)] mt-20" style={{ background: '#0F1010' }}>
+        <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8 text-xs">
+          {/* Brand + chain */}
+          <div className="md:col-span-1">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-8 h-8 rounded-md bg-zinc-800 flex items-center justify-center text-sm font-bold text-[var(--accent)]">m</span>
+              <span className="text-sm font-medium tracking-tight text-white">mensa</span>
+            </div>
+            <div className="text-[var(--fg-muted)] leading-relaxed">
+              The AI treasury that proves itself.
+            </div>
+            <div className="flex items-center gap-2 mt-3 text-[var(--fg-dim)]">
+              <span className="pulse" />
+              <span>Live on Mantle Mainnet</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="pulse" />
-            <span>Mantle Mainnet</span>
+
+          {/* Product */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Product</div>
+            <ul className="space-y-1.5 text-[var(--fg-muted)]">
+              <li><Link href="/" className="hover:text-white transition">Agent</Link></li>
+              <li><Link href="/tournament" className="hover:text-white transition">Tournament</Link></li>
+              <li><Link href="/backtest" className="hover:text-white transition">Backtest</Link></li>
+              <li><Link href="/deposit" className="hover:text-white transition">Deposit</Link></li>
+              <li><Link href="/leaderboard" className="hover:text-white transition">Leaderboard</Link></li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Resources</div>
+            <ul className="space-y-1.5 text-[var(--fg-muted)]">
+              <li><Link href="/docs" className="hover:text-white transition">Architecture & docs</Link></li>
+              <li><Link href="/docs#mvp-scope" className="hover:text-white transition">MVP scope & roadmap</Link></li>
+              <li>
+                <a href="https://mantlescan.xyz/address/0xAcA925e51E7C801Af4E4080f041AF0ec112CCe49#code" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
+                  Contracts on Mantlescan
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/obseasd/mensa" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
+                  Source on GitHub
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Built with */}
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Built with</div>
+            <ul className="space-y-1.5 text-[var(--fg-muted)]">
+              <li>
+                <a href="https://www.mantle.xyz" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
+                  Mantle Network
+                </a>
+              </li>
+              <li>
+                <a href="https://www.anthropic.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
+                  Anthropic (Claude Haiku 4.5)
+                </a>
+              </li>
+              <li>
+                <a href="https://ondo.finance" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
+                  Ondo Finance (USDY)
+                </a>
+              </li>
+              <li>
+                <a href="https://www.coingecko.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
+                  Coingecko + DefiLlama
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-[var(--border)]">
+          <div className="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-[var(--fg-dim)]">
+            <div>
+              Built for the{' '}
+              <a href="https://dorahacks.io/hackathon/mantleturingtesthackathon2026/" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--accent)] underline">
+                Mantle Turing Test Hackathon 2026
+              </a>
+              {' '}· MIT license · No financial advice
+            </div>
+            <div className="mono">v0.1.0 · {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'dev'}</div>
           </div>
         </div>
       </footer>

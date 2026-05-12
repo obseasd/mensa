@@ -86,8 +86,15 @@ export default function HomeTournamentFeed() {
                 <span className="text-xs text-[var(--fg-muted)]">—</span>
               )}
             </div>
-            <div className="col-span-2 text-right text-[var(--fg-muted)] text-xs">
-              {r.settled ? 'Settled' : 'Live'}
+            <div className="col-span-2 text-right text-xs">
+              {r.settled ? (
+                <span className="text-[var(--fg-muted)]">Settled</span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-[var(--accent)] font-medium">
+                  <span className="pulse" />
+                  Live
+                </span>
+              )}
             </div>
           </Link>
         )

@@ -59,15 +59,39 @@ export default function DocsPage() {
       <Nav />
 
       <main className="relative z-10 max-w-3xl mx-auto px-6 pt-12 pb-20">
-        <div className="mb-12">
+        <div className="mb-8">
           <h1 className="text-3xl font-medium tracking-tight mb-2">Architecture</h1>
           <p className="text-sm text-[var(--fg-muted)]">
             How Mensa works: the contracts, the agent loop, and why every piece is on Mantle.
           </p>
         </div>
 
+        {/* Quick nav — helps a judge or visitor jump straight to what they care about */}
+        <nav className="mb-12 flex flex-wrap gap-2 text-[11px]">
+          {[
+            { href: '#thesis', label: 'Thesis' },
+            { href: '#flow', label: 'Flow' },
+            { href: '#contracts', label: 'Contracts' },
+            { href: '#stack', label: 'Stack' },
+            { href: '#why-mantle', label: 'Why Mantle' },
+            { href: '#tracks', label: 'Hackathon tracks' },
+            { href: '#compliance', label: 'Compliance' },
+            { href: '#yield-landscape', label: 'Mantle yield markets' },
+            { href: '#mvp-scope', label: 'MVP scope & roadmap' },
+            { href: '#run-locally', label: 'Run locally' },
+          ].map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              className="px-2 py-1 rounded border border-[var(--border)] text-[var(--fg-muted)] hover:text-white hover:border-[var(--border-strong)] transition"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
         {/* The thesis */}
-        <section className="mb-12">
+        <section id="thesis" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">The thesis</h2>
           <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-3">
             You can&apos;t trust an AI with your money if you can&apos;t verify its reasoning.
@@ -81,13 +105,13 @@ export default function DocsPage() {
         </section>
 
         {/* Architecture diagram */}
-        <section className="mb-12">
+        <section id="flow" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Flow</h2>
           <ArchitectureDiagram />
         </section>
 
         {/* Contracts */}
-        <section className="mb-12">
+        <section id="contracts" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Contracts</h2>
           <div className="space-y-3">
             {CONTRACTS.map((c) => (
@@ -111,7 +135,7 @@ export default function DocsPage() {
         </section>
 
         {/* Tech stack */}
-        <section className="mb-12">
+        <section id="stack" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Stack</h2>
           <div className="card overflow-hidden">
             {STACK.map((s, i) => (
@@ -127,7 +151,7 @@ export default function DocsPage() {
         </section>
 
         {/* Why Mantle */}
-        <section className="mb-12">
+        <section id="why-mantle" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Why Mantle</h2>
           <div className="grid gap-3">
             {[
@@ -147,7 +171,7 @@ export default function DocsPage() {
         </section>
 
         {/* Hackathon tracks */}
-        <section className="mb-12">
+        <section id="tracks" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Hackathon tracks</h2>
           <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
             Mantle Turing Test 2026 · Phase 2 (AI Awakening). Mensa is submitted to multiple
@@ -195,7 +219,7 @@ export default function DocsPage() {
         </section>
 
         {/* Compliance & target users */}
-        <section className="mb-12">
+        <section id="compliance" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Compliance posture</h2>
           <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
             Mensa is a non-custodial smart-contract treasury. The protocol itself
@@ -249,7 +273,7 @@ export default function DocsPage() {
         </section>
 
         {/* Mantle yield landscape */}
-        <section className="mb-12">
+        <section id="yield-landscape" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-2">Mantle yield landscape</h2>
           <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
             The broader DeFi yield universe Mensa monitors on Mantle. Today the agent
@@ -262,7 +286,7 @@ export default function DocsPage() {
         </section>
 
         {/* MVP scope & roadmap */}
-        <section className="mb-12" id="mvp-scope">
+        <section id="mvp-scope" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">MVP scope & roadmap</h2>
           <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
             Mensa is a hackathon-stage prototype focused on the AI&apos;s
@@ -365,7 +389,7 @@ export default function DocsPage() {
         </section>
 
         {/* Run locally */}
-        <section className="mb-12">
+        <section id="run-locally" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Run locally</h2>
           <div className="card p-5 mono text-xs leading-relaxed overflow-x-auto whitespace-pre text-[var(--fg-muted)]">
 {`# Clone & install
