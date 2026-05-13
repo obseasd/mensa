@@ -99,7 +99,7 @@ export default async function Image() {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ fontSize: 32, fontWeight: 500, color: '#fff', fontFamily: 'monospace' }}>6/6</div>
+            <div style={{ fontSize: 32, fontWeight: 500, color: '#fff', fontFamily: 'monospace' }}>7/7</div>
             <div style={{ fontSize: 13, color: '#7a7a7a', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               Verified contracts
             </div>

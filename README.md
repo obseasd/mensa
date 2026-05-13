@@ -31,7 +31,7 @@ Mensa is an **intelligent RWA portfolio management agent** on Mantle. It allocat
 | [`/backtest`](https://mensa-mu.vercel.app/backtest) | The Mensa-style heuristic replayed on 30/90/180/365d of real ETH price history, vs 50-50 hold + 100% mETH + 100% USDY. Risk-adjusted comparison, max drawdown, Sharpe-like, methodology section. |
 | [`/deposit`](https://mensa-mu.vercel.app/deposit) | Deposit/withdraw flow for mETH and USDY, live APY breakdown (passive 50-50 vs Mensa active at current alloc, plus observed alpha), 15% perf fee disclosure. |
 | [`/leaderboard`](https://mensa-mu.vercel.app/leaderboard) | Bounty pool stats, top humans by reputation/win-rate/badges/claimable, sidebar with how-rewards-work + Mensa yield sources. |
-| [`/docs`](https://mensa-mu.vercel.app/docs) | Architecture diagram, 6 verified contracts with role + risk, Hackathon tracks, Compliance posture, MVP scope & roadmap, Mantle yield landscape. |
+| [`/docs`](https://mensa-mu.vercel.app/docs) | Architecture diagram, 7 verified contracts with role + risk, Hackathon tracks, Compliance posture, MVP scope & roadmap, Mantle yield landscape. |
 
 ---
 
@@ -110,7 +110,7 @@ Submitted to multiple tracks (the rules allow multi-track submission, but only o
 | Track | Mensa fit |
 |-------|-----------|
 | **AI x RWA** (primary) | Mantle's moat track. Mensa is exactly an "intelligent RWA portfolio management agent" — allocates between mETH (Mantle liquid staking) and USDY (Ondo tokenized T-bills), both live Mantle RWAs. Path B: end-user-facing AI × RWA product. |
-| **Grand Champion** | Cross-track award. Mensa scores on Technical Depth (AI × on-chain integration, 6 verified contracts), Innovation (Turing tournament + verifiable alpha), Mantle Ecosystem Contribution (RWA-native), and Product Completeness (live deployed app). |
+| **Grand Champion** | Cross-track award. Mensa scores on Technical Depth (AI × on-chain integration, 7 verified contracts including ERC-8004 IdentityRegistry), Innovation (Turing tournament + verifiable alpha + memory loop), Mantle Ecosystem Contribution (RWA-native), and Product Completeness (live deployed app). |
 | **AI Alpha & Data** | Path B: trading strategy with verifiable on-chain Alpha. Every decision and outcome is settled on-chain; cumulative alpha vs 50/50 baseline is computed from contract reads. |
 | **Best UI/UX Award** | Clean dark Mantle-aligned design, AI interaction shown via the live decision card with reasoning, fully responsive. |
 | **20 Project Deployment Award** | First-come, first-served. Mensa hits all bars: deployed to mainnet, AI-powered function callable on-chain, public frontend, open-source repo. |
@@ -140,7 +140,7 @@ The fee splits:
 
 | Layer | Mechanism |
 |-------|-----------|
-| Stake gate | Mainnet requires user to have ≥10 ether equivalent in MensaAgent to vote |
+| Stake gate | Voting requires a positive deposit in MensaAgent (current threshold: 0.001 ether equivalent on Mantle Mainnet — calibrated low for the hackathon submission window so judges can demo the round-vote flow with a small stake; production deployment would raise this). |
 | Reputation weighting | Vote weight = sqrt(reputation), so whales with high rep don't dominate, bots stay at weight 1 |
 | Cost of entry | Gas required to deposit + vote (Mantle is cheap but non-zero) |
 | Performance-weighted rewards | Random voters with low outperformance receive negligible bounty share |

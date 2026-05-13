@@ -193,7 +193,7 @@ export default function DocsPage() {
               {
                 name: 'Grand Champion',
                 primary: false,
-                fit: 'Cross-track. Scores Technical Depth (AI × on-chain integration, 6 verified contracts), Innovation (Turing tournament + verifiable alpha), Mantle Ecosystem Contribution (RWA-native, low-gas decision logging), and Product Completeness (live deployed app, autonomous loop).',
+                fit: 'Cross-track. Scores Technical Depth (AI × on-chain integration, 7 verified contracts including ERC-8004 IdentityRegistry), Innovation (Turing tournament + verifiable alpha + self-feedback memory loop), Mantle Ecosystem Contribution (RWA-native, low-gas decision logging), and Product Completeness (live deployed app, autonomous loop).',
               },
               {
                 name: 'AI Alpha & Data',
@@ -208,7 +208,7 @@ export default function DocsPage() {
               {
                 name: '20 Project Deployment Award',
                 primary: false,
-                fit: 'First-come, first-served. Mensa hits all bars: 6 contracts deployed and verified on Mantle Mainnet, AI-powered function (executeAllocation) callable on-chain, public frontend, open-source repo with README.',
+                fit: 'First-come, first-served. Mensa hits all bars: 7 contracts deployed and verified on Mantle Mainnet, AI-powered function (executeAllocation) callable on-chain, public frontend, open-source repo with README + Foundry tests + GitHub Actions cron.',
               },
             ].map((t) => (
               <div key={t.name} className="card p-4">
@@ -270,7 +270,7 @@ export default function DocsPage() {
               <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
                 Source is open under MIT.{' '}
                 <a href="https://github.com/obseasd/mensa" target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">GitHub repo</a>{' '}
-                with Foundry tests. All 6 contracts verified on Mantlescan (linked in the Contracts
+                with Foundry tests. All 7 contracts verified on Mantlescan (linked in the Contracts
                 section above). A formal audit by a Web3 audit firm (Spearbit / Trail of Bits / Macro)
                 is part of any production launch checklist — not done at hackathon stage.
               </p>

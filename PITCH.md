@@ -78,26 +78,29 @@ Before every decision, the agent reads its own on-chain track record and
 injects it into Claude's prompt. Self-correction emerges without a single
 training pipeline.
 
-Sample prompt context that ships on every Claude call:
+Shape of the prompt context that ships on every Claude call — the exact
+numbers are rendered live from on-chain reads on the deck slide, so they're
+always current.
 
 ```
-Track record (since memory loop calibrated, 6 rounds):
-  Cumulative alpha vs 50/50 baseline: +204 bps
-  Per-round average: +34 bps
+Track record (since memory loop calibrated, N rounds):
+  Cumulative alpha vs 50/50 baseline: ±X bps
+  Per-round average: ±Y bps
 
 Recent rounds:
-  Round #7: you=20% mETH (19bps) | 50/50=49bps | optimal=100% mETH (97bps) | you-vs-base=-30bps
-  Round #6: you=0% mETH (0bps) | 50/50=-126bps | optimal=0% mETH (0bps) | you-vs-base=+126bps
-  ...
+  Round #M:   AI=Z% mETH, alpha vs 50/50 = ±X bps
+  Round #M-1: AI=Z% mETH, alpha vs 50/50 = ±X bps
+  Round #M-2: AI=Z% mETH, alpha vs 50/50 = ±X bps
 
-Round #1 was a -324bps loss made before this feedback loop existed —
+Round #1 was a -324 bps loss made before this feedback loop existed —
 note it but don't let it dominate your current strategy.
 
 Reflect: when did you under-allocate to the winning asset?
 When did you over-rebalance and lose to passive 50/50?
 ```
 
-Cheap. Transparent. No ML infra.
+See the live values at https://mensa-mu.vercel.app/pitch (slide 05) and
+https://mensa-mu.vercel.app/tournament. Cheap, transparent, no ML infra.
 
 ---
 
@@ -122,33 +125,36 @@ on-chain. No subjective judging, no leaderboard cooking.
 ## 07 · Why we're honest — Round #1 was a disaster
 
 We didn't ship a pitch deck where the AI looks like a genius. The first round
-on mainnet was a 19.4% loss. We learned in public.
+on mainnet was a -19.43% loss. We learned in public.
 
-| Round | AI alloc | Alpha vs 50/50 |
-|-------|----------|----------------|
-| #1 | 60% mETH | **−324 bps** (cold start, ETH crashed) |
-| #2 | 35% mETH | +15 bps |
-| #3 | 25% mETH | +21 bps |
-| #4 | 15% mETH | +10 bps |
-| #5 | 5% mETH | +62 bps |
-| #6 | 0% mETH | +126 bps |
-| #7 | 20% mETH | −30 bps |
+The deck slide for this section renders the table live from on-chain so it's
+always current. Snapshot of the journey so far:
 
-Round #1 cold-start: 60% mETH, ETH crashed 19%, the AI ate the loss.
+- **Round #1** — 60% mETH, alpha **−324 bps** (cold start, ETH crashed, the
+  feedback loop wasn't running yet)
+- **Round #2** — 35% mETH, alpha **+16 bps** (first decision with memory loop)
+- **Round #3** — 25% mETH, alpha **+21 bps**
+- **Round #4** — 15% mETH, alpha **+11 bps**
+- **Round #5** — 5% mETH, alpha **+62 bps**
+- **Round #6** — 0% mETH, alpha **+127 bps**
+- **Round #7** — 20% mETH, alpha **−29 bps** (AI tried mETH back in, lost
+  again — the loop continuing to operate, not a polished result)
+- **Round #8** — 10% mETH, alpha **−23 bps**
 
-Round #2 onward — once the memory loop was active — the AI shifted defensive
-(60 → 35 → 25 → 15 → 5 → 0% mETH) and beat the baseline on every round until
-#7.
+The AI shifted defensive after the round #1 disaster (60 → 35 → 25 → 15 → 5
+→ 0% mETH) and beat the baseline on every round from #2 to #6. Rounds #7
+and #8 the AI started easing back into mETH and lost both — that's what
+honest in-public learning looks like, recorded irreversibly on-chain.
 
-**Net since calibrated: +204 bps cumulative, +34 bps per round.**
+**See the live cumulative and per-round alpha on the** [Tournament page](https://mensa-mu.vercel.app/tournament) **and** [pitch deck slide 07](https://mensa-mu.vercel.app/pitch).
 
 ---
 
 ## 08 · Beyond live rounds — backtest
 
-Seven on-chain rounds isn't a track record. We replay Mensa's strategy
-against three baselines (passive 50/50, 100% mETH HODL, 100% USDY) on a year
-of Coingecko ETH prices.
+A handful of on-chain rounds isn't a long enough track record. So we replay
+Mensa's strategy against three baselines (passive 50/50, 100% mETH HODL,
+100% USDY) on a year of Coingecko ETH prices.
 
 See https://mensa-mu.vercel.app/backtest for the live, interactive version.
 

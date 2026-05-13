@@ -14,6 +14,15 @@ interface Stats {
   alphaCalibrated?: { settledRounds: number; alphaBps: number; perRoundAvgAlphaBps: number }
 }
 
+interface RoundLite {
+  id: number
+  aiAllocMeth: number
+  aiReturnBps: string
+  humanReturnBps: string
+  settled: boolean
+  outcome: number
+}
+
 const SLIDE_COUNT = 12
 
 function Slide({ id, label, children }: { id: number; label?: string; children: ReactNode }) {
@@ -46,14 +55,27 @@ function Lead({ children }: { children: ReactNode }) {
 
 export default function PitchDeck() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [rounds, setRounds] = useState<RoundLite[]>([])
   const [current, setCurrent] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch('/api/onchain').then(r => r.json()).then(d => {
       if (d.stats) setStats(d.stats)
+      if (Array.isArray(d.rounds)) setRounds(d.rounds)
     }).catch(() => {})
   }, [])
+
+  // Settled rounds, ordered by id ascending, with alpha pre-computed.
+  const journey = rounds
+    .filter(r => r.settled)
+    .sort((a, b) => a.id - b.id)
+    .map(r => ({
+      id: r.id,
+      alloc: r.aiAllocMeth,
+      alpha: Number(r.aiReturnBps) - Number(r.humanReturnBps),
+      outcome: r.outcome,
+    }))
 
   // Track current slide
   useEffect(() => {
@@ -249,23 +271,16 @@ export default function PitchDeck() {
             ))}
           </div>
 
-          {/* Alpha sparkline-ish: visual representation of cumulative alpha journey */}
-          {stats?.alphaCalibrated && stats.alphaCalibrated.settledRounds > 0 && (
+          {/* Alpha sparkline: live per-round trajectory from on-chain rounds */}
+          {journey.length > 0 && (
             <div className="card p-5 mt-6">
               <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">
-                Mensa post-calibration trajectory
+                Per-round alpha trajectory · {journey.length} settled round{journey.length === 1 ? '' : 's'}
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs">
-                {[
-                  { id: 1, alpha: -324, label: 'cold' },
-                  { id: 2, alpha: 15 },
-                  { id: 3, alpha: 21 },
-                  { id: 4, alpha: 10 },
-                  { id: 5, alpha: 62 },
-                  { id: 6, alpha: 126 },
-                  { id: 7, alpha: -30 },
-                ].map(r => {
-                  const max = 130
+              <div className={`grid grid-cols-2 md:grid-cols-${Math.min(journey.length, 10)} gap-2 text-xs`}>
+                {journey.map(r => {
+                  const isColdStart = r.id === 1
+                  const max = Math.max(...journey.map(x => Math.abs(x.alpha)), 100)
                   const heightPct = Math.min(100, (Math.abs(r.alpha) / max) * 100)
                   const color = r.alpha >= 0 ? 'var(--accent)' : '#ef4444'
                   return (
@@ -274,13 +289,13 @@ export default function PitchDeck() {
                       <div className="w-full h-12 flex items-end relative">
                         <div
                           className="w-full rounded-sm transition-all"
-                          style={{ height: `${heightPct}%`, background: color, opacity: r.label === 'cold' ? 0.4 : 1 }}
+                          style={{ height: `${heightPct}%`, background: color, opacity: isColdStart ? 0.4 : 1 }}
                         />
                       </div>
                       <div className="text-[9px] mono" style={{ color }}>
                         {r.alpha >= 0 ? '+' : ''}{r.alpha}
                       </div>
-                      {r.label && <div className="text-[8px] text-[var(--fg-dim)]">{r.label}</div>}
+                      {isColdStart && <div className="text-[8px] text-[var(--fg-dim)]">cold</div>}
                     </div>
                   )
                 })}
@@ -301,20 +316,32 @@ export default function PitchDeck() {
             into Claude&apos;s prompt. Self-correction emerges without a single training pipeline.
           </Lead>
           <div className="card p-6 mt-10 mono text-[11px] md:text-xs leading-relaxed text-[var(--fg-muted)] overflow-x-auto whitespace-pre">
-{`Track record (since memory loop calibrated, 6 rounds):
-  Cumulative alpha vs 50/50 baseline: +204 bps
-  Per-round average: +34 bps
+{(() => {
+  const cal = stats?.alphaCalibrated
+  const calRounds = cal?.settledRounds ?? 0
+  const calCum = cal?.alphaBps ?? 0
+  const calPer = cal?.perRoundAvgAlphaBps ?? 0
+  const sign = (n: number) => (n >= 0 ? '+' : '')
+  const recent = [...journey].filter(r => r.id > 1).sort((a, b) => b.id - a.id).slice(0, 3)
+  const recentBlock = recent.length
+    ? recent.map(r => `  Round #${r.id}: AI=${r.alloc}% mETH, alpha vs 50/50 = ${sign(r.alpha)}${r.alpha} bps`).join('\n')
+    : '  (no calibrated rounds yet)'
+  const r1 = journey.find(r => r.id === 1)
+  const r1Line = r1
+    ? `Round #1 was a ${sign(r1.alpha)}${r1.alpha} bps loss made before this feedback loop existed —\nnote it but don't let it dominate your current strategy.`
+    : ''
+  return `Track record (since memory loop calibrated, ${calRounds} rounds):
+  Cumulative alpha vs 50/50 baseline: ${sign(calCum)}${calCum} bps
+  Per-round average: ${sign(calPer)}${Math.round(calPer)} bps
 
 Recent rounds:
-  Round #7: you=20% mETH (19bps) | 50/50=49bps | optimal=100% mETH (97bps) | you-vs-base=-30bps
-  Round #6: you=0% mETH (0bps) | 50/50=-126bps | optimal=0% mETH (0bps) | you-vs-base=+126bps
-  ...
+${recentBlock}
 
-Round #1 was a -324bps loss made before this feedback loop existed —
-note it but don't let it dominate your current strategy.
+${r1Line}
 
 Reflect: when did you under-allocate to the winning asset?
-When did you over-rebalance and lose to passive 50/50?`}
+When did you over-rebalance and lose to passive 50/50?`
+})()}
           </div>
           <p className="text-xs text-[var(--fg-muted)] mt-6 max-w-3xl leading-relaxed">
             This is the actual prompt context shipped on every Claude call. The agent reads
@@ -363,30 +390,38 @@ When did you over-rebalance and lose to passive 50/50?`}
             We didn&apos;t want to ship a pitch deck where the AI looks like a genius. The first
             round on mainnet was a 19.4% loss. We learned in public.
           </Lead>
-          <div className="grid md:grid-cols-7 gap-2 mt-10 text-xs">
-            {[
-              { id: 1, alloc: 60, alpha: -324, color: '#ef4444' },
-              { id: 2, alloc: 35, alpha: 15, color: 'var(--accent)' },
-              { id: 3, alloc: 25, alpha: 21, color: 'var(--accent)' },
-              { id: 4, alloc: 15, alpha: 10, color: 'var(--accent)' },
-              { id: 5, alloc: 5, alpha: 62, color: 'var(--accent)' },
-              { id: 6, alloc: 0, alpha: 126, color: 'var(--accent)' },
-              { id: 7, alloc: 20, alpha: -30, color: '#ef4444' },
-            ].map(r => (
-              <div key={r.id} className="card p-3 text-center">
-                <div className="text-[10px] mono text-[var(--fg-muted)]">Round #{r.id}</div>
-                <div className="text-xs mono mt-2">{r.alloc}% mETH</div>
-                <div className="text-base mono font-medium mt-2" style={{ color: r.color }}>
-                  {r.alpha >= 0 ? '+' : ''}{r.alpha}<span className="text-[9px]">bps</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          {journey.length > 0 ? (
+            <div className={`grid md:grid-cols-${Math.min(journey.length, 10)} gap-2 mt-10 text-xs`}>
+              {journey.map(r => {
+                const color = r.alpha >= 0 ? 'var(--accent)' : '#ef4444'
+                return (
+                  <div key={r.id} className="card p-3 text-center">
+                    <div className="text-[10px] mono text-[var(--fg-muted)]">Round #{r.id}</div>
+                    <div className="text-xs mono mt-2">{r.alloc}% mETH</div>
+                    <div className="text-base mono font-medium mt-2" style={{ color }}>
+                      {r.alpha >= 0 ? '+' : ''}{r.alpha}<span className="text-[9px]">bps</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="card p-8 text-center text-sm text-[var(--fg-muted)] mt-10">
+              Loading rounds from on-chain...
+            </div>
+          )}
           <p className="text-sm text-[var(--fg-muted)] mt-8 max-w-3xl leading-relaxed">
             Round #1 cold-start: 60% mETH, ETH crashed 19%, the AI ate the loss. Round #2
-            onward — once the memory loop was active — the AI shifted defensive
-            (60 → 35 → 25 → 15 → 5 → 0% mETH) and beat the baseline on every round until #7.
-            <span className="text-[var(--fg)]"> Net since calibrated: +204 bps cumulative, +34 bps per round.</span>
+            onward — once the memory loop was active — the AI shifted defensive and beat the
+            baseline on every round from #2 to #6. Later rounds saw it dip negative again —
+            that&apos;s the feedback loop continuing to operate, not a polished result.
+            {stats?.alphaCalibrated && stats.alphaCalibrated.settledRounds > 0 && (
+              <span className="text-[var(--fg)]">
+                {' '}Net since calibrated: {stats.alphaCalibrated.alphaBps >= 0 ? '+' : ''}{stats.alphaCalibrated.alphaBps} bps
+                cumulative, {stats.alphaCalibrated.perRoundAvgAlphaBps >= 0 ? '+' : ''}{Math.round(stats.alphaCalibrated.perRoundAvgAlphaBps)} bps
+                per round over {stats.alphaCalibrated.settledRounds} round{stats.alphaCalibrated.settledRounds === 1 ? '' : 's'}.
+              </span>
+            )}
           </p>
         </Slide>
 
@@ -394,7 +429,7 @@ When did you over-rebalance and lose to passive 50/50?`}
         <Slide id={8} label="Verifiable">
           <H>Beyond live rounds: we backtest on 1 year of real ETH price history.</H>
           <Lead>
-            Seven on-chain rounds isn&apos;t a track record. So we replay Mensa&apos;s strategy
+            A handful of on-chain rounds isn&apos;t a long enough track record. So we replay Mensa&apos;s strategy
             against three baselines (passive 50/50, 100% mETH HODL, 100% USDY) on a year of
             Coingecko ETH prices. The methodology is on{' '}
             <Link href="/backtest" className="text-[var(--accent)] hover:underline">/backtest</Link>.
