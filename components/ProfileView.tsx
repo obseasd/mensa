@@ -35,8 +35,20 @@ interface Profile {
   claimableBounty: string
 }
 
+interface UserVote {
+  roundId: number
+  alloc: number
+  settled: boolean
+  aiAllocMeth: number
+  userReturnBps: number | null
+  aiReturnBps: number | null
+  alphaVsAiBps: number | null
+  beatAi: boolean | null
+}
+
 export default function ProfileView({ address }: { address: string }) {
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [votes, setVotes] = useState<UserVote[]>([])
   const [loading, setLoading] = useState(true)
   const { address: myAddress } = useAccount()
 
@@ -46,9 +58,14 @@ export default function ProfileView({ address }: { address: string }) {
   const { isLoading: confirming, isSuccess: claimed } = useWaitForTransactionReceipt({ hash: claimTx })
 
   useEffect(() => {
-    fetch(`/api/profile/${address}`)
-      .then(r => r.json())
-      .then(data => { if (!data.error) setProfile(data) })
+    Promise.all([
+      fetch(`/api/profile/${address}`).then(r => r.json()),
+      fetch(`/api/user-votes/${address}`).then(r => r.json()),
+    ])
+      .then(([profData, votesData]) => {
+        if (!profData.error) setProfile(profData)
+        if (Array.isArray(votesData?.votes)) setVotes(votesData.votes)
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [address])
@@ -210,6 +227,66 @@ export default function ProfileView({ address }: { address: string }) {
             <div>
               <div className="text-[var(--fg-muted)] text-xs">Total votes cast</div>
               <div className="mt-1 mono">{profile.totalVotes}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vote history per round */}
+      {votes.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">
+            {isOwnProfile ? 'Your vote history' : 'Vote history'}
+          </div>
+          <div className="card overflow-x-auto">
+            <div className="min-w-[560px]">
+              <div className="grid grid-cols-[50px_90px_90px_90px_100px_80px] gap-3 px-5 py-3 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-[var(--fg-muted)]">
+                <div>Round</div>
+                <div className="text-right">Your alloc</div>
+                <div className="text-right">AI alloc</div>
+                <div className="text-right">Your return</div>
+                <div className="text-right">vs AI</div>
+                <div className="text-right">Result</div>
+              </div>
+              {votes.map(v => (
+                <div
+                  key={v.roundId}
+                  className="grid grid-cols-[50px_90px_90px_90px_100px_80px] gap-3 px-5 py-3 border-b border-[var(--border)] last:border-b-0 text-sm"
+                >
+                  <div className="mono text-[var(--fg-muted)]">#{v.roundId}</div>
+                  <div className="mono text-right">{v.alloc}% mETH</div>
+                  <div className="mono text-right text-[var(--fg-muted)]">{v.aiAllocMeth}% mETH</div>
+                  <div className={`mono text-right ${
+                    v.userReturnBps === null
+                      ? 'text-[var(--fg-dim)]'
+                      : v.userReturnBps >= 0
+                        ? 'text-[var(--accent)]'
+                        : 'text-red-400'
+                  }`}>
+                    {v.userReturnBps === null ? '—' : `${(v.userReturnBps / 100).toFixed(2)}%`}
+                  </div>
+                  <div className={`mono text-right text-xs ${
+                    v.alphaVsAiBps === null
+                      ? 'text-[var(--fg-dim)]'
+                      : v.alphaVsAiBps >= 0
+                        ? 'text-[var(--accent)]'
+                        : 'text-red-400'
+                  }`}>
+                    {v.alphaVsAiBps === null
+                      ? '—'
+                      : `${v.alphaVsAiBps >= 0 ? '+' : ''}${v.alphaVsAiBps} bps`}
+                  </div>
+                  <div className="text-right">
+                    {!v.settled ? (
+                      <span className="text-[10px] text-[var(--fg-dim)]">pending</span>
+                    ) : v.beatAi ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--accent-soft)] text-[var(--accent)]">won</span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[var(--fg-muted)]">lost</span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

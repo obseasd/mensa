@@ -15,6 +15,7 @@ const TOURNAMENT_ABI = [
   'function aiWinRateBps() view returns (uint256)',
   'function rounds(uint256) view returns (uint256 id, uint64 startTime, uint64 settlementTime, uint256 startMethPrice, uint256 startUsdyPrice, uint256 settleMethPrice, uint256 settleUsdyPrice, uint8 aiAllocMeth, uint8 humanAllocMeth, int256 aiReturnBps, int256 humanReturnBps, uint8 outcome, bool settled)',
   'function getVotersCount(uint256) view returns (uint256)',
+  'function roundVoters(uint256, uint256) view returns (address)',
   'event HumanVote(uint256 indexed id, address indexed human, uint8 allocMeth, uint256 weight)',
 ]
 
@@ -417,14 +418,22 @@ export async function getLeaderboard(limit = 100): Promise<UserProfile[]> {
   const c: any = ACTIVE_CHAIN.contracts
   const tournament = new ethers.Contract(c.tournamentVault, TOURNAMENT_ABI, provider)
 
-  // Pull all HumanVote events
-  const filter = tournament.filters.HumanVote()
-  const events = await tournament.queryFilter(filter, -50000, 'latest')
+  // Deterministic walk over roundVoters[] — no event windowing.
+  const total = Number(await tournament.totalRounds())
   const voterSet = new Set<string>()
-  for (const e of events) {
-    if ('args' in e && e.args) {
-      voterSet.add((e.args[1] as string).toLowerCase())
-    }
+  if (total > 0) {
+    const counts = await Promise.all(
+      Array.from({ length: total }, (_, i) => tournament.getVotersCount(i + 1))
+    )
+    const reads: Promise<string>[] = []
+    counts.forEach((cnt: bigint, idx: number) => {
+      const roundId = idx + 1
+      for (let i = 0; i < Number(cnt); i++) {
+        reads.push(tournament.roundVoters(roundId, i))
+      }
+    })
+    const addrs = await Promise.all(reads)
+    for (const a of addrs) voterSet.add(a.toLowerCase())
   }
 
   const profiles = await Promise.all(
@@ -432,6 +441,72 @@ export async function getLeaderboard(limit = 100): Promise<UserProfile[]> {
   )
 
   return profiles.sort((a, b) => b.reputation - a.reputation)
+}
+
+export interface UserVote {
+  roundId: number
+  alloc: number
+  weight: number
+  timestamp: number
+  settled: boolean
+  aiAllocMeth: number
+  userReturnBps: number | null
+  aiReturnBps: number | null
+  alphaVsAiBps: number | null
+  beatAi: boolean | null
+}
+
+/// Returns one row per round the user voted in, with outcome vs AI.
+export async function getUserVotes(address: string): Promise<UserVote[]> {
+  const provider = getProvider()
+  const t = new ethers.Contract(ACTIVE_CHAIN.contracts.tournamentVault, TOURNAMENT_FULL_ABI, provider)
+  const total = Number(await t.totalRounds())
+  if (total === 0) return []
+
+  const ids = Array.from({ length: total }, (_, i) => i + 1)
+  const [voteRows, roundRows] = await Promise.all([
+    Promise.all(ids.map(id => t.votes(id, address))),
+    Promise.all(ids.map(id => t.rounds(id))),
+  ])
+
+  const out: UserVote[] = []
+  for (let i = 0; i < ids.length; i++) {
+    const v = voteRows[i]
+    const ts = Number(v.timestamp ?? v[2])
+    if (ts === 0) continue
+    const r = roundRows[i]
+    const alloc = Number(v.allocMeth ?? v[0])
+    const settled = Boolean(r.settled)
+    let userReturnBps: number | null = null
+    let aiReturnBps: number | null = null
+    let alpha: number | null = null
+    let beat: boolean | null = null
+    if (settled) {
+      const sm = Number(r.startMethPrice), em = Number(r.settleMethPrice)
+      const su = Number(r.startUsdyPrice), eu = Number(r.settleUsdyPrice)
+      if (sm > 0 && su > 0) {
+        const methBps = Math.round(((em - sm) / sm) * 10000)
+        const usdyBps = Math.round(((eu - su) / su) * 10000)
+        userReturnBps = Math.round((alloc * methBps + (100 - alloc) * usdyBps) / 100)
+        aiReturnBps = Number(r.aiReturnBps)
+        alpha = userReturnBps - aiReturnBps
+        beat = userReturnBps > aiReturnBps
+      }
+    }
+    out.push({
+      roundId: ids[i],
+      alloc,
+      weight: Number(v.weight ?? v[1]),
+      timestamp: ts,
+      settled,
+      aiAllocMeth: Number(r.aiAllocMeth),
+      userReturnBps,
+      aiReturnBps,
+      alphaVsAiBps: alpha,
+      beatAi: beat,
+    })
+  }
+  return out.sort((a, b) => b.roundId - a.roundId)
 }
 
 export async function getBountyStats() {

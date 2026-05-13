@@ -1,8 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAccount } from 'wagmi'
 import VoteRound from './VoteRound'
 import SettleButton from './SettleButton'
+
+interface UserVote {
+  roundId: number
+  alloc: number
+  settled: boolean
+  alphaVsAiBps: number | null
+  beatAi: boolean | null
+}
 
 interface Round {
   id: number
@@ -200,6 +209,8 @@ export default function TournamentList() {
   const [stats, setStats] = useState<Stats>({ totalRounds: 0, aiWins: 0, humanWins: 0, aiWinRatePct: 0 })
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [userVotesByRound, setUserVotesByRound] = useState<Map<number, UserVote>>(new Map())
+  const { address } = useAccount()
 
   useEffect(() => {
     fetch('/api/onchain')
@@ -211,6 +222,18 @@ export default function TournamentList() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!address) { setUserVotesByRound(new Map()); return }
+    fetch(`/api/user-votes/${address}`)
+      .then(r => r.json())
+      .then((data: { votes?: UserVote[] }) => {
+        const map = new Map<number, UserVote>()
+        for (const v of data.votes ?? []) map.set(v.roundId, v)
+        setUserVotesByRound(map)
+      })
+      .catch(console.error)
+  }, [address])
 
   const aiWinRate = stats.totalRounds > 0 ? stats.aiWinRatePct : 0
   // 'since calibrated' = since the memory loop kicked in (round #1 was cold start).
@@ -357,6 +380,7 @@ export default function TournamentList() {
                   const alphaBps = aiBps - baseBps
                   const isOpen = expandedId === r.id
                   const winnerLabel = r.outcome === 1 ? 'AI' : r.outcome === 2 ? 'Baseline' : 'Tie'
+                  const myVote = userVotesByRound.get(r.id)
 
                   return (
                     <div key={r.id}>
@@ -364,7 +388,10 @@ export default function TournamentList() {
                         onClick={() => setExpandedId(isOpen ? null : r.id)}
                         className="w-full grid grid-cols-[40px_1fr_100px_100px_100px_80px] gap-3 px-5 py-3 border-b border-[var(--border)] last:border-b-0 text-sm hover:bg-white/[0.02] transition text-left"
                       >
-                        <div className="mono text-[var(--fg-muted)]">#{r.id}</div>
+                        <div className="mono text-[var(--fg-muted)] flex items-center gap-1">
+                          #{r.id}
+                          {myVote && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" title="You voted on this round" />}
+                        </div>
                         <div className="flex items-center gap-3 min-w-0">
                           <AllocBar methPct={r.aiAllocMeth} />
                           <span className="mono text-xs whitespace-nowrap">
@@ -389,6 +416,25 @@ export default function TournamentList() {
                           }`}>{winnerLabel}</span>
                         </div>
                       </button>
+                      {myVote && (
+                        <div className="px-5 py-2 border-b border-[var(--border)] bg-[var(--accent-soft)]/40 text-[11px] flex items-center gap-3 text-[var(--fg-muted)]">
+                          <span className="text-[var(--accent)] font-medium">YOU</span>
+                          <span className="mono">{myVote.alloc}% mETH</span>
+                          {myVote.alphaVsAiBps !== null && (
+                            <>
+                              <span className="text-[var(--fg-dim)]">vs AI</span>
+                              <span className={`mono ${myVote.beatAi ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+                                {myVote.alphaVsAiBps >= 0 ? '+' : ''}{myVote.alphaVsAiBps} bps
+                              </span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded ${
+                                myVote.beatAi ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-white/5 text-[var(--fg-muted)]'
+                              }`}>
+                                {myVote.beatAi ? 'won' : 'lost'}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
                       {isOpen && <RoundDetail r={r} />}
                     </div>
                   )
