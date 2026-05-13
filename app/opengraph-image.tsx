@@ -26,8 +26,8 @@ export default async function Image() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '48px' }}>
           <img
             src="https://mensa-mu.vercel.app/logo.png"
-            width={48}
-            height={48}
+            width={72}
+            height={72}
             style={{ borderRadius: 8, filter: 'invert(1)' }}
             alt="M"
           />

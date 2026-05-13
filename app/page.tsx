@@ -146,7 +146,7 @@ export default function Home() {
           {/* Brand block */}
           <div>
             <div className="flex items-center gap-2.5 mb-2">
-              <img src="/logo.png" alt="Mensa" className="w-9 h-9" style={{ filter: 'invert(1)' }} />
+              <img src="/logo.png" alt="Mensa" className="w-[54px] h-[54px]" style={{ filter: 'invert(1)' }} />
               <span className="text-base font-medium tracking-tight text-white">mensa</span>
             </div>
             <div className="text-[11px] text-[var(--fg-muted)] mb-1">
