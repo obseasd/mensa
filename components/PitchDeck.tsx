@@ -245,8 +245,8 @@ export default function PitchDeck() {
               },
               {
                 label: 'AI win rate',
-                value: stats && stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—',
-                detail: 'vs 50/50 baseline',
+                value: stats && (stats.aiWins + stats.humanWins) > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—',
+                detail: stats ? `${stats.aiWins}W / ${stats.humanWins}L · ${stats.aiWins + stats.humanWins} settled` : 'vs 50/50 baseline',
                 icon: '◐',
                 accent: true,
               },

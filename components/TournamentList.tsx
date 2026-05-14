@@ -247,7 +247,12 @@ export default function TournamentList() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${aiWinRate.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L`, accent: true },
+          {
+            label: 'AI Win Rate',
+            value: (stats.aiWins + stats.humanWins) > 0 ? `${aiWinRate.toFixed(0)}%` : '—',
+            detail: `${stats.aiWins}W / ${stats.humanWins}L · ${stats.aiWins + stats.humanWins} settled`,
+            accent: true,
+          },
           {
             label: 'Alpha / round (since calibrated)',
             value: hasAlpha ? `${alphaSign}${alphaC!.perRoundAvgAlphaBps.toFixed(0)} bps` : '—',

@@ -58,7 +58,11 @@ export default function OnChainStats() {
 
   const items: Array<{ label: string; value: string; detail: string; term?: keyof typeof GLOSSARY }> = [
     { label: 'TVL', value: formatTvl(stats.tvlUsd), detail: 'mETH + USDY in agent', term: 'TVL' },
-    { label: 'AI Win Rate', value: stats.totalRounds > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—', detail: `${stats.aiWins}W / ${stats.humanWins}L of ${stats.totalRounds} rounds` },
+    {
+      label: 'AI Win Rate',
+      value: (stats.aiWins + stats.humanWins) > 0 ? `${stats.aiWinRatePct.toFixed(0)}%` : '—',
+      detail: `${stats.aiWins}W / ${stats.humanWins}L · ${stats.aiWins + stats.humanWins} settled`,
+    },
     { label: 'Alpha vs 50/50', value: alphaValue, detail: alphaDetail, term: 'alpha' },
   ]
 

@@ -256,12 +256,11 @@ export async function getProtocolStats(): Promise<{
   const usdy = new ethers.Contract(ACTIVE_CHAIN.contracts.USDY, ERC20_BAL_ABI, provider)
   const agentAddr = ACTIVE_CHAIN.contracts.mensaAgent
 
-  const [totalDecisions, totalRounds, aiWins, humanWins, aiWinRateBps, currentMethAllocPct, lastRebalanceAt, methBal, usdyBal, ethPrice] = await Promise.all([
+  const [totalDecisions, totalRounds, aiWins, humanWins, currentMethAllocPct, lastRebalanceAt, methBal, usdyBal, ethPrice] = await Promise.all([
     log.totalDecisions(),
     tournament.totalRounds(),
     tournament.aiWins(),
     tournament.humanWins(),
-    tournament.aiWinRateBps(),
     agent.currentMethAllocPct(),
     agent.lastRebalanceAt().catch(() => BigInt(0)),
     meth.balanceOf(agentAddr).catch(() => BigInt(0)),
@@ -274,12 +273,20 @@ export async function getProtocolStats(): Promise<{
   const usdyWhole = Number(ethers.formatUnits(usdyBal, 18))
   const tvlUsd = methWhole * ethPrice * 1.04 + usdyWhole * 1.05
 
+  // Win rate is settled-rounds only. The contract divides by totalRounds
+  // (which includes pending) — that's misleading. We compute the honest
+  // ratio: aiWins / (aiWins + humanWins).
+  const aiW = Number(aiWins)
+  const hW = Number(humanWins)
+  const settled = aiW + hW
+  const aiWinRatePct = settled > 0 ? (aiW / settled) * 100 : 0
+
   return {
     totalDecisions: Number(totalDecisions),
     totalRounds: Number(totalRounds),
-    aiWins: Number(aiWins),
-    humanWins: Number(humanWins),
-    aiWinRatePct: Number(aiWinRateBps) / 100,
+    aiWins: aiW,
+    humanWins: hW,
+    aiWinRatePct,
     currentMethAllocPct: Number(currentMethAllocPct),
     tvlUsd,
     lastRebalanceAt: Number(lastRebalanceAt),
