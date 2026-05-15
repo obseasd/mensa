@@ -83,6 +83,7 @@ export default function DocsPage() {
             { href: '#tracks', label: 'Hackathon tracks' },
             { href: '#compliance', label: 'Compliance' },
             { href: '#yield-landscape', label: 'Mantle yield markets' },
+            { href: '#strategy-economics', label: 'Strategy economics' },
             { href: '#mvp-scope', label: 'MVP scope & roadmap' },
             { href: '#run-locally', label: 'Run locally' },
           ].map(({ href, label }) => (
@@ -289,6 +290,184 @@ export default function DocsPage() {
             gated on the share-model upgrade in the roadmap below. Click a pool for APY history.
           </p>
           <YieldProtocols />
+        </section>
+
+        {/* Strategy economics — sourced cost / break-even analysis */}
+        <section id="strategy-economics" className="mb-12 scroll-mt-24">
+          <h2 className="text-lg font-medium mb-4">Strategy economics</h2>
+          <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
+            A treasury agent that rebalances aggressively can lose to a passive 50/50 even if
+            its allocation calls are correct, because rebalancing has a real cost (gas + DEX
+            slippage). This section makes that cost explicit, with sourced numbers from
+            Mantle today, and derives the minimum viable treasury size for active
+            rebalancing on Mantle.
+          </p>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Cost of a single rebalance, observed on-chain (2026-05-15)</div>
+          <div className="card p-4 mb-4">
+            <table className="w-full text-xs">
+              <tbody className="text-[var(--fg-muted)]">
+                <tr className="border-b border-[var(--border)]">
+                  <td className="py-1.5 pr-3">Average gas per <code className="text-[var(--fg)] mono">executeAllocation</code></td>
+                  <td className="py-1.5 mono text-right text-white">299,416 gas</td>
+                </tr>
+                <tr className="border-b border-[var(--border)]">
+                  <td className="py-1.5 pr-3">Mantle gas price (typical, observed)</td>
+                  <td className="py-1.5 mono text-right text-white">50 gwei</td>
+                </tr>
+                <tr className="border-b border-[var(--border)]">
+                  <td className="py-1.5 pr-3">Cost per rebalance in MNT</td>
+                  <td className="py-1.5 mono text-right text-white">0.0150 MNT</td>
+                </tr>
+                <tr className="border-b border-[var(--border)]">
+                  <td className="py-1.5 pr-3">MNT spot price (DefiLlama)</td>
+                  <td className="py-1.5 mono text-right text-white">$0.6722</td>
+                </tr>
+                <tr>
+                  <td className="py-1.5 pr-3">Cost per rebalance in USD</td>
+                  <td className="py-1.5 mono text-right text-[var(--accent)]">$0.0101</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="text-[10px] text-[var(--fg-dim)] mt-2 leading-relaxed">
+              Source: Mantlescan API <code className="mono">eth_getTransactionReceipt</code> for the last
+              15 calls to MensaAgent. Gas cost is fixed in MNT regardless of trade size, so a $1k
+              treasury and a $1M treasury pay the same on-chain.
+            </p>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Mantle DEX pool depth for mETH and USDY (observed via DexScreener, 2026-05-15)</div>
+          <div className="card p-4 mb-4">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-[var(--fg-dim)]">
+                  <th className="py-1.5 pr-3 text-left font-normal">Pool</th>
+                  <th className="py-1.5 pr-3 text-left font-normal">DEX</th>
+                  <th className="py-1.5 text-right font-normal">Liquidity (USD)</th>
+                  <th className="py-1.5 text-right font-normal">24h vol (USD)</th>
+                </tr>
+              </thead>
+              <tbody className="text-[var(--fg-muted)]">
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">mETH / WMNT</td><td className="py-1.5 pr-3">Oku</td><td className="py-1.5 mono text-right">$5,438</td><td className="py-1.5 mono text-right">$2,232</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">mETH / WMNT</td><td className="py-1.5 pr-3">FusionX</td><td className="py-1.5 mono text-right">$4,019</td><td className="py-1.5 mono text-right">$0.18</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">WMNT / cmETH</td><td className="py-1.5 pr-3">Merchant Moe</td><td className="py-1.5 mono text-right">$2,466</td><td className="py-1.5 mono text-right">$366</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">mETH / WMNT</td><td className="py-1.5 pr-3">Agni</td><td className="py-1.5 mono text-right">$1,382</td><td className="py-1.5 mono text-right">$442</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">WMNT / mETH</td><td className="py-1.5 pr-3">Merchant Moe</td><td className="py-1.5 mono text-right">$880</td><td className="py-1.5 mono text-right">$64</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 text-[var(--accent)] mono">mETH total</td><td></td><td className="py-1.5 mono text-right text-[var(--accent)]">$14,185</td><td></td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">USDY / WMNT</td><td className="py-1.5 pr-3">butter.xyz</td><td className="py-1.5 mono text-right">$165</td><td className="py-1.5 mono text-right">$0.94</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">USDY / WMNT</td><td className="py-1.5 pr-3">Agni (×3)</td><td className="py-1.5 mono text-right">$83</td><td className="py-1.5 mono text-right">$6</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">USDY / WMNT</td><td className="py-1.5 pr-3">Velocimeter</td><td className="py-1.5 mono text-right">$6</td><td className="py-1.5 mono text-right">$0</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 text-[var(--accent)] mono">USDY total</td><td></td><td className="py-1.5 mono text-right text-[var(--accent)]">$254</td><td></td></tr>
+              </tbody>
+            </table>
+            <p className="text-[10px] text-[var(--fg-dim)] mt-2 leading-relaxed">
+              Source: DexScreener Mantle, queried 2026-05-15. There is no direct mETH/USDY pair anywhere
+              on Mantle. A swap would route through WMNT (two hops) on pools whose combined depth on the
+              USDY side is roughly $254. Constant-product slippage at this depth is severe even on small
+              notional sizes.
+            </p>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Slippage estimate by trade size (constant-product, on the $254 USDY side)</div>
+          <div className="card p-4 mb-4">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-[var(--fg-dim)]">
+                  <th className="py-1.5 pr-3 text-left font-normal">Trade size (USD)</th>
+                  <th className="py-1.5 text-right font-normal">% of USDY pool depth</th>
+                  <th className="py-1.5 text-right font-normal">Approx slippage</th>
+                  <th className="py-1.5 text-right font-normal">Verdict</th>
+                </tr>
+              </thead>
+              <tbody className="text-[var(--fg-muted)]">
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$1</td><td className="py-1.5 mono text-right">0.4%</td><td className="py-1.5 mono text-right">~0.8%</td><td className="py-1.5 text-right text-[var(--accent)]">demo OK</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$10</td><td className="py-1.5 mono text-right">4%</td><td className="py-1.5 mono text-right">~8%</td><td className="py-1.5 text-right text-yellow-400">demo only</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$50</td><td className="py-1.5 mono text-right">20%</td><td className="py-1.5 mono text-right">~40%</td><td className="py-1.5 text-right text-red-400">not viable</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$100</td><td className="py-1.5 mono text-right">39%</td><td className="py-1.5 mono text-right">~64%</td><td className="py-1.5 text-right text-red-400">not viable</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$1,000</td><td className="py-1.5 mono text-right">394%</td><td className="py-1.5 mono text-right">untradeable</td><td className="py-1.5 text-right text-red-400">untradeable</td></tr>
+              </tbody>
+            </table>
+            <p className="text-[10px] text-[var(--fg-dim)] mt-2 leading-relaxed">
+              Constant-product slippage approximation: slippage ≈ trade / (pool + trade). Doubles
+              roughly with each step. The mETH side is wider (~$14K total) so slippage there is much
+              lower for the same notional; USDY is the bottleneck.
+            </p>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Break-even: how many rebalances per year a strategy can absorb</div>
+          <div className="card p-4 mb-4">
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed mb-3">
+              Assume the yield differential between mETH (around 0.34% to 2.28% APY observed on
+              Mantle pools, per DefiLlama 2026-05-15) and USDY (3.55% APY, Ondo native) is roughly
+              200 to 300 bps on average. A rebalance captures a fraction of that differential
+              proportional to how long the new allocation is held and how much of the treasury
+              actually moves.
+            </p>
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed mb-3">
+              Take a generous case: each rebalance captures 100 bps of annualized alpha. Take a
+              realistic cost: at production pool depth ($500K+ on the USDY side), a rebalance
+              touching 20% of treasury costs roughly 0.5% × 20% = 0.1% of total treasury. Then:
+            </p>
+            <div className="bg-[var(--bg-elevated)] p-3 rounded mono text-[11px] text-[var(--fg-muted)] mb-3">
+              <div>Annual alpha captured ≥ Annual rebalance cost</div>
+              <div>100 bps ≥ N × 0.1% × treasury</div>
+              <div>N ≤ 10 rebalances per year</div>
+            </div>
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+              At today&apos;s Mantle pool depth, the USDY side is too thin to support even a single
+              real rebalance above $100 notional. The strategy is therefore gated on pool depth
+              growth or aggregator routing (Velora-style) on a chain where USDY has liquidity.
+              Until then, Mensa runs in notional rebalancing mode: the AI declares the optimal
+              allocation, the contract records it, and the tournament measures the AI&apos;s
+              decision quality against price moves without actual swap execution.
+            </p>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">Minimum viable treasury, as a function of USDY pool depth</div>
+          <div className="card p-4 mb-4">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-[var(--fg-dim)]">
+                  <th className="py-1.5 pr-3 text-left font-normal">USDY pool depth on Mantle</th>
+                  <th className="py-1.5 text-right font-normal">Max single trade @ 1% slippage</th>
+                  <th className="py-1.5 text-right font-normal">Implied max treasury (at 20% trade per rebalance)</th>
+                </tr>
+              </thead>
+              <tbody className="text-[var(--fg-muted)]">
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$254 (today)</td><td className="py-1.5 mono text-right">~$2.50</td><td className="py-1.5 mono text-right">~$12</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$10K</td><td className="py-1.5 mono text-right">~$100</td><td className="py-1.5 mono text-right">~$500</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$100K</td><td className="py-1.5 mono text-right">~$1,000</td><td className="py-1.5 mono text-right">~$5,000</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$1M</td><td className="py-1.5 mono text-right">~$10,000</td><td className="py-1.5 mono text-right">~$50,000</td></tr>
+                <tr className="border-t border-[var(--border)]"><td className="py-1.5 pr-3 mono">$10M</td><td className="py-1.5 mono text-right">~$100,000</td><td className="py-1.5 mono text-right">~$500,000</td></tr>
+              </tbody>
+            </table>
+            <p className="text-[10px] text-[var(--fg-dim)] mt-2 leading-relaxed">
+              For an actively rebalancing treasury to make economic sense on Mantle today, USDY
+              pool depth would need to grow by roughly 40x (to $10K) for a $500 treasury to be
+              viable, and 400x (to $100K) for a $5K treasury. The numbers are sensitive to the
+              tolerated slippage cap and to the average trade size as a percentage of treasury,
+              but the order of magnitude is clear: Mantle DEX depth for USDY is the dominant
+              constraint, not gas, not Claude, not contract design.
+            </p>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-2">What we changed in response</div>
+          <div className="card p-4">
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed mb-3">
+              The hackathon-bootstrap config used a 50 bps rebalance threshold and a 30 minute
+              cooldown to force tournament rounds to open quickly. Once we computed the numbers
+              above, we restored the contract defaults:
+            </p>
+            <ul className="text-xs text-[var(--fg-muted)] leading-relaxed list-disc pl-5 space-y-1">
+              <li><code className="text-[var(--fg)] mono">minRebalanceBps</code>: 50 → 200 (2 percentage points minimum allocation delta to act)</li>
+              <li><code className="text-[var(--fg)] mono">minTimeBetweenRebalances</code>: 30 min → 6 hours</li>
+            </ul>
+            <p className="text-xs text-[var(--fg-muted)] leading-relaxed mt-3">
+              The Claude system prompt was also updated to require rebalance-cost reasoning before
+              proposing REBALANCE, and to apply a 24h stickiness rule against direction reversals.
+              See <code className="text-[var(--fg)] mono">lib/agent.ts</code>.
+            </p>
+          </div>
         </section>
 
         {/* MVP scope & roadmap */}
