@@ -23,7 +23,7 @@ interface RoundLite {
   outcome: number
 }
 
-const SLIDE_COUNT = 12
+const SLIDE_COUNT = 13
 
 function Slide({ id, label, children }: { id: number; label?: string; children: ReactNode }) {
   return (
@@ -171,38 +171,54 @@ export default function PitchDeck() {
 
         {/* === Slide 2 — Problem === */}
         <Slide id={2} label="Problem">
-          <H>You can&apos;t trust an AI with your money if you can&apos;t verify its reasoning.</H>
+          <H>Every yield vault today is either a black box or a static bet.</H>
           <Lead>
-            DeFi has billions in autonomous protocols. AI agents are starting to manage real
-            capital. But every existing AI treasury is a black box: it acts, you trust, you hope.
+            DeFi has hundreds of millions in yield vaults. Users pick one allocation and live with
+            it for months. When market conditions shift, they stay in the wrong asset, capturing
+            less yield with more risk than they should. AI-managed vaults exist, but they act, you
+            trust, you hope. Two broken patterns.
           </Lead>
-          <div className="grid md:grid-cols-3 gap-4 mt-12 text-sm">
-            {[
-              { title: 'No reasoning trail', detail: 'You see "the AI rebalanced." You don\'t see why.' },
-              { title: 'No benchmark', detail: 'No way to measure if the AI is actually any good.' },
-              { title: 'No accountability', detail: 'If it underperforms, no human is on the line — including the AI.' },
-            ].map(b => (
-              <div key={b.title} className="card p-5">
-                <div className="text-sm font-medium mb-2 text-[var(--fg)]">{b.title}</div>
-                <div className="text-[var(--fg-muted)]">{b.detail}</div>
+          <div className="grid md:grid-cols-2 gap-4 mt-12 text-sm">
+            <div className="card p-5">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">Pattern 1, static vaults</div>
+              <div className="text-sm font-medium mb-2 text-[var(--fg)]">Pick once, suffer later</div>
+              <div className="text-[var(--fg-muted)] leading-relaxed">
+                Aave passive, Yearn, single-asset LST vaults. Lock in one allocation. When the
+                yield spread between assets shifts, you have no way to react. You captured the
+                spread when it favored your bet. You lose it when it does not.
               </div>
-            ))}
+            </div>
+            <div className="card p-5">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">Pattern 2, AI black boxes</div>
+              <div className="text-sm font-medium mb-2 text-[var(--fg)]">Trust without verification</div>
+              <div className="text-[var(--fg-muted)] leading-relaxed">
+                Existing AI treasuries rebalance, but the reasoning is private. No on-chain
+                decision log, no human benchmark, no accountability. If the agent underperforms
+                for a year, you find out via your wallet, not via a public trail.
+              </div>
+            </div>
           </div>
+          <p className="text-sm text-[var(--fg-muted)] mt-8 max-w-3xl leading-relaxed">
+            <span className="text-[var(--fg)] font-medium">The user is left choosing</span> between a
+            static vault that ignores market shifts, or an opaque AI that you cannot audit. Both
+            leave yield on the table, both increase risk, and neither earns trust at scale.
+          </p>
         </Slide>
 
         {/* === Slide 3 — Thesis === */}
         <Slide id={3} label="Solution">
-          <H>Mensa: every decision logged, explained, and challenged.</H>
+          <H>Optimize yield and reduce risk, with every move verifiable on-chain.</H>
           <Lead>
-            We take the hackathon name literally. The agent must prove, statistically and
-            on-chain, that it allocates better than humans on the same data. Three primitives.
+            Mensa rebalances dynamically between mETH and USDY based on live market state, so
+            users capture the better-yielding asset while keeping diversification. The AI decides,
+            humans audit, the chain records. Three primitives make every move provable.
           </Lead>
           <div className="grid md:grid-cols-3 gap-4 mt-12">
             {[
               {
                 tag: '01',
                 title: 'Logged',
-                detail: 'Every allocation decision is written to the DecisionLog contract — action, confidence, full reasoning text emitted as event data.',
+                detail: 'Every allocation decision is written to the DecisionLog contract: action, confidence, full reasoning text emitted as event data.',
               },
               {
                 tag: '02',
@@ -222,6 +238,11 @@ export default function PitchDeck() {
               </div>
             ))}
           </div>
+          <p className="text-xs text-[var(--fg-muted)] mt-8 max-w-3xl leading-relaxed">
+            <span className="text-[var(--fg)] font-medium">Net effect for users:</span> better
+            risk-adjusted yield than any static vault, plus a public audit trail no AI black box
+            can match.
+          </p>
         </Slide>
 
         {/* === Slide 4 — Live numbers === */}
@@ -547,8 +568,131 @@ When did you over-rebalance and lose to passive 50/50?`
           </div>
         </Slide>
 
-        {/* === Slide 11 — Track fit === */}
-        <Slide id={11} label="Hackathon">
+        {/* === Slide 11 — Opportunity / market === */}
+        <Slide id={11} label="Opportunity">
+          <H>Static yield vaults are the cassette tape of DeFi.</H>
+          <Lead>
+            Today every yield vault on every chain locks the user into one allocation. Mantle has
+            hundreds of millions in yield TVL sitting in static positions. The first project to
+            ship a verifiable AI-rebalanced vault captures the flow when those users upgrade. We
+            think that is when, not if.
+          </Lead>
+
+          <div className="grid md:grid-cols-3 gap-4 mt-10 text-sm">
+            <div className="card p-5">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Today, static</div>
+              <div className="text-base font-medium mb-2">Pick once, live with it</div>
+              <div className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Single-asset LST vaults lose when stables yield ahead. T-bill vaults lose when ETH
+                appreciates. The user holds one view of the world for months while the market
+                moves on. Yield captured: the spread when it favored your bet. Yield missed: the
+                spread when it did not.
+              </div>
+            </div>
+            <div className="card p-5 border-[var(--accent)]" style={{ background: 'var(--accent-soft)' }}>
+              <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">Mensa, dynamic</div>
+              <div className="text-base font-medium mb-2">Read, reason, rebalance</div>
+              <div className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Every 6 hours Claude reads the live yield spread, the ETH market, and its own
+                on-chain track record. If a rebalance clears the cost of execution, the agent
+                moves capital. Same TVL, better risk-adjusted return, public audit trail of every
+                decision.
+              </div>
+            </div>
+            <div className="card p-5">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-3">Tomorrow, the default</div>
+              <div className="text-base font-medium mb-2">Verifiable AI vaults win</div>
+              <div className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Once users compare a static 50/50 vault to a vault that captured +1278 bps of
+                cumulative alpha over 24 rounds with a public reasoning trail, the choice writes
+                itself. Static vaults stay around for the same reason cassette tapes did: legacy,
+                not preference.
+              </div>
+            </div>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-10 mb-2">Who this is for, and at what scale</div>
+          <div className="grid md:grid-cols-2 gap-3 text-xs">
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">DAO treasuries</div>
+              <div className="text-[var(--fg-muted)] leading-relaxed">
+                Tens of millions in idle stables across Mantle and Ethereum DAOs. They need yield
+                without permanent ETH exposure. A verifiable AI rebalancing vault is exactly the
+                primitive their governance can defend.
+              </div>
+            </div>
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">Sophisticated DeFi savers</div>
+              <div className="text-[var(--fg-muted)] leading-relaxed">
+                The user who today rotates between Aave, Pendle, Spark, Yearn manually. Mensa
+                automates that rotation for them and proves it on-chain. Their alpha goes up,
+                their gas drops, their reasoning is auditable.
+              </div>
+            </div>
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">RWA-backed protocols</div>
+              <div className="text-[var(--fg-muted)] leading-relaxed">
+                Protocols holding USDY, USDM, BUIDL as collateral or as reserve need yield that
+                does not introduce hidden risk. A vault that explicitly bounds ETH exposure with
+                a public reasoning trail makes the risk committee&apos;s job easier.
+              </div>
+            </div>
+            <div className="card p-4">
+              <div className="text-sm font-medium mb-1">Institutional crypto funds</div>
+              <div className="text-[var(--fg-muted)] leading-relaxed">
+                Funds that already accept AI in trading still avoid AI in custody, because they
+                can&apos;t audit it. An open-source, on-chain-reasoning vault closes that gap and
+                opens the door to actual institutional flow.
+              </div>
+            </div>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mt-10 mb-2">TVL milestones, what each one unlocks</div>
+          <div className="card p-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div>
+                <div className="mono text-[var(--accent)] text-base mb-1">Today</div>
+                <div className="text-[var(--fg-muted)] leading-relaxed">
+                  Notional rebalancing. The AI declares the optimal allocation, the contract
+                  records it, alpha is measured against the baseline. No swaps yet, Mantle DEX
+                  depth is the blocker, not our code.
+                </div>
+              </div>
+              <div>
+                <div className="mono text-[var(--accent)] text-base mb-1">$100K TVL</div>
+                <div className="text-[var(--fg-muted)] leading-relaxed">
+                  Real swap execution via Velora-style aggregator. Ship the ERC-4626 share model.
+                  This is when Mensa stops being notional and starts being a live treasury.
+                </div>
+              </div>
+              <div>
+                <div className="mono text-[var(--accent)] text-base mb-1">$1M TVL</div>
+                <div className="text-[var(--fg-muted)] leading-relaxed">
+                  DAO treasuries onboard. Active human tournament voting. Auditor engagement
+                  (Spearbit, Trail of Bits, Macro). Per-asset isolation in the share model.
+                </div>
+              </div>
+              <div>
+                <div className="mono text-[var(--accent)] text-base mb-1">$10M and beyond</div>
+                <div className="text-[var(--fg-muted)] leading-relaxed">
+                  Cross-chain deployment (Base, Arbitrum, Solana via WDK). Multiple Mensa
+                  instances each with its own ERC-8004 identity, federated reputation across
+                  chains. Institutional flow.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-[var(--fg-dim)] mt-6 leading-relaxed">
+            None of this is hypothetical at the protocol level. mETH staking yields 0.34 to 2.28%
+            APY (DefiLlama). USDY T-bills yield 3.55% (Ondo native). A vault that flips between
+            them based on real-time spread is a primitive that should exist. We are building it
+            with the audit trail no AI black box can offer.
+          </p>
+        </Slide>
+
+        {/* === Slide 12 — Track fit === */}
+        <Slide id={12} label="Hackathon">
           <H>Why Mensa fits the Mantle Turing Test.</H>
           <Lead>The hackathon brief asked for autonomous agents that compete on-chain, verify reasoning, and use Mantle&apos;s native RWAs. Mensa is that, line by line.</Lead>
           <div className="grid md:grid-cols-2 gap-3 mt-10">
@@ -582,8 +726,8 @@ When did you over-rebalance and lose to passive 50/50?`
           </div>
         </Slide>
 
-        {/* === Slide 12 — Try it === */}
-        <Slide id={12} label="CTA">
+        {/* === Slide 13 — Try it === */}
+        <Slide id={13} label="CTA">
           <H>Try it. Now. Live.</H>
           <Lead>
             Everything in this deck is fetched from on-chain state at slide load. No fake numbers,

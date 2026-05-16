@@ -25,33 +25,47 @@ tournament.
 
 ## 02 · Problem
 
-**You can't trust an AI with your money if you can't verify its reasoning.**
+**Every yield vault today is either a black box or a static bet.**
 
-DeFi has billions in autonomous protocols. AI agents are starting to manage
-real capital. But every existing AI treasury is a black box: it acts, you
-trust, you hope.
+DeFi has hundreds of millions in yield vaults. Users pick one allocation and
+live with it for months. When market conditions shift, they stay in the wrong
+asset, capturing less yield with more risk than they should. AI-managed vaults
+exist, but they act, you trust, you hope. Two broken patterns.
 
-- **No reasoning trail.** You see "the AI rebalanced." You don't see why.
-- **No benchmark.** No way to measure if the AI is actually any good.
-- **No accountability.** If it underperforms, no human is on the line — including the AI.
+- **Pattern 1, static vaults.** Aave passive, Yearn, single-asset LST vaults.
+  Lock in one allocation. When the yield spread between assets shifts, you
+  have no way to react. You captured the spread when it favored your bet, you
+  lose it when it does not.
+- **Pattern 2, AI black boxes.** Existing AI treasuries rebalance, but the
+  reasoning is private. No on-chain decision log, no human benchmark, no
+  accountability. If the agent underperforms for a year, you find out via
+  your wallet, not via a public trail.
+
+The user is left choosing between a static vault that ignores market shifts,
+or an opaque AI that you cannot audit. Both leave yield on the table, both
+increase risk, and neither earns trust at scale.
 
 ---
 
 ## 03 · Solution
 
-**Mensa: every decision logged, explained, and challenged.**
+**Optimize yield and reduce risk, with every move verifiable on-chain.**
 
-We take the hackathon name literally. The agent must prove, statistically and
-on-chain, that it allocates better than humans on the same data. Three
-primitives.
+Mensa rebalances dynamically between mETH and USDY based on live market state,
+so users capture the better-yielding asset while keeping diversification. The
+AI decides, humans audit, the chain records. Three primitives make every move
+provable.
 
-1. **Logged** — Every allocation decision is written to the DecisionLog
+1. **Logged.** Every allocation decision is written to the DecisionLog
    contract: action, confidence, full reasoning text emitted as event data.
-2. **Explained** — Claude Haiku 4.5 generates a plain-English justification
+2. **Explained.** Claude Haiku 4.5 generates a plain-English justification
    for every rebalance. No black-box scores.
-3. **Challenged** — The TournamentVault pits the AI against humans on
+3. **Challenged.** The TournamentVault pits the AI against humans on
    identical inputs. After 24h, the higher-return allocation wins, settled
    on-chain.
+
+**Net effect for users:** better risk-adjusted yield than any static vault,
+plus a public audit trail no AI black box can match.
 
 ---
 
@@ -204,22 +218,78 @@ submission that lies.
 
 ---
 
-## 11 · Why Mensa fits the Mantle Turing Test
+## 11 · The opportunity — static yield vaults are the cassette tape of DeFi
+
+Today every yield vault on every chain locks the user into one allocation.
+Mantle has hundreds of millions in yield TVL sitting in static positions. The
+first project to ship a verifiable AI-rebalanced vault captures the flow when
+those users upgrade. We think that is when, not if.
+
+**Today, static.** Single-asset LST vaults lose when stables yield ahead.
+T-bill vaults lose when ETH appreciates. The user holds one view of the
+world for months while the market moves on. Yield captured: the spread when
+it favored your bet. Yield missed: the spread when it did not.
+
+**Mensa, dynamic.** Every 6 hours Claude reads the live yield spread, the
+ETH market, and its own on-chain track record. If a rebalance clears the
+cost of execution, the agent moves capital. Same TVL, better risk-adjusted
+return, public audit trail of every decision.
+
+**Tomorrow, the default.** Once users compare a static 50/50 vault to a
+vault that captured +1278 bps of cumulative alpha over 24 rounds with a
+public reasoning trail, the choice writes itself. Static vaults stay around
+for the same reason cassette tapes did: legacy, not preference.
+
+### Who this is for, and at what scale
+
+- **DAO treasuries.** Tens of millions in idle stables across Mantle and
+  Ethereum DAOs. They need yield without permanent ETH exposure. A verifiable
+  AI rebalancing vault is exactly the primitive their governance can defend.
+- **Sophisticated DeFi savers.** The user who today rotates between Aave,
+  Pendle, Spark, Yearn manually. Mensa automates that rotation and proves it
+  on-chain. Their alpha goes up, their gas drops, their reasoning is
+  auditable.
+- **RWA-backed protocols.** Protocols holding USDY, USDM, BUIDL as collateral
+  or as reserve need yield that does not introduce hidden risk. A vault that
+  explicitly bounds ETH exposure with a public reasoning trail makes the
+  risk committee's job easier.
+- **Institutional crypto funds.** Funds that already accept AI in trading
+  still avoid AI in custody, because they cannot audit it. An open-source,
+  on-chain-reasoning vault closes that gap and opens the door to actual
+  institutional flow.
+
+### TVL milestones, what each one unlocks
+
+| TVL stage | What it unlocks |
+|-----------|-----------------|
+| **Today** | Notional rebalancing. The AI declares the optimal allocation, the contract records it, alpha is measured against the baseline. No swaps yet, Mantle DEX depth is the blocker, not our code. |
+| **$100K TVL** | Real swap execution via Velora-style aggregator. Ship the ERC-4626 share model. Mensa stops being notional and starts being a live treasury. |
+| **$1M TVL** | DAO treasuries onboard. Active human tournament voting. Auditor engagement (Spearbit, Trail of Bits, Macro). Per-asset isolation in the share model. |
+| **$10M and beyond** | Cross-chain deployment (Base, Arbitrum, Solana via WDK). Multiple Mensa instances each with its own ERC-8004 identity, federated reputation across chains. Institutional flow. |
+
+None of this is hypothetical at the protocol level. mETH staking yields 0.34
+to 2.28% APY (DefiLlama). USDY T-bills yield 3.55% (Ondo native). A vault
+that flips between them based on real-time spread is a primitive that should
+exist. We are building it with the audit trail no AI black box can offer.
+
+---
+
+## 12 · Why Mensa fits the Mantle Turing Test
 
 The hackathon brief asked for autonomous agents that compete on-chain,
 verify reasoning, and use Mantle's native RWAs. Mensa is that, line by line.
 
 | Track | Mensa fit |
 |-------|-----------|
-| **AI × RWA (primary)** | Path B — end-user-facing intelligent RWA portfolio agent. mETH (Mantle LST) + USDY (Ondo T-bills) are exactly the RWAs the track names. |
+| **AI × RWA (primary)** | End-user-facing intelligent RWA portfolio agent. mETH (Mantle LST) + USDY (Ondo T-bills) are exactly the RWAs the track names. |
 | **Grand Champion** | 7 verified contracts (Tech Depth), Turing tournament + verifiable alpha + memory loop (Innovation), Mantle-native (Ecosystem), live deployed (Completeness). |
-| **AI Alpha & Data** | Path B — trading strategy with verifiable on-chain alpha. Every return computed from contract reads, alpha measured against passive baseline. |
+| **AI Alpha & Data** | Trading strategy with verifiable on-chain alpha. Every return computed from contract reads, alpha measured against passive baseline. |
 | **Best UI/UX** | Dark Mantle-aligned design. AI reasoning surfaced. Glossary tooltips. Responsive. Live data everywhere. |
-| **20 Project Deployment Award** | 7/7 verified on Mantlescan, AI-powered function callable on-chain, public frontend, open MIT repo with README + Foundry tests. |
+| **Finalist & Deployment Award** | 7/7 verified on Mantlescan, AI-powered function callable on-chain, public frontend, open MIT repo with README + Foundry tests. |
 
 ---
 
-## 12 · Try it — now, live
+## 13 · Try it, now, live
 
 Everything in this deck is fetched from on-chain state at slide load. No fake
 numbers, no static screenshots, no PDF tricks.
