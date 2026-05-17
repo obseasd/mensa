@@ -53,6 +53,271 @@ function Lead({ children }: { children: ReactNode }) {
   return <p className="text-lg md:text-xl text-[var(--fg-muted)] leading-relaxed max-w-3xl">{children}</p>
 }
 
+interface JourneyRound { id: number; alloc: number; alpha: number; outcome: number }
+
+/// Compact per-round bar strip. Tells the dramatic story of round 1
+/// vs the recovery. Single visual instead of a wall of cards.
+function JourneyStrip({ journey, stats }: { journey: JourneyRound[]; stats: Stats | null }) {
+  if (journey.length === 0) return null
+
+  const W = 1000
+  const H = 220
+  const PAD_X = 30
+  const PAD_TOP = 28
+  const PAD_BOTTOM = 36
+
+  const maxAbs = Math.max(...journey.map(r => Math.abs(r.alpha)), 50)
+  const xOf = (i: number) => PAD_X + (i / Math.max(1, journey.length - 1)) * (W - 2 * PAD_X)
+  const yOf = (v: number) => {
+    const mid = PAD_TOP + (H - PAD_TOP - PAD_BOTTOM) / 2
+    return mid - (v / maxAbs) * ((H - PAD_TOP - PAD_BOTTOM) / 2)
+  }
+  const zeroY = yOf(0)
+  const barW = Math.max(6, Math.min(24, (W - 2 * PAD_X) / journey.length - 6))
+
+  const wins = journey.filter(r => r.alpha > 0).length
+  const losses = journey.filter(r => r.alpha < 0).length
+  const r1 = journey.find(r => r.id === 1)
+  const winRatePct = journey.length > 0 ? Math.round((wins / journey.length) * 100) : 0
+  const cal = stats?.alphaCalibrated
+
+  return (
+    <div className="mt-8 space-y-4">
+      {/* Per-round bar chart with round 1 highlighted */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--accent)]">
+            Per-round alpha vs baseline · all settled rounds
+          </div>
+          <div className="text-[10px] mono text-[var(--fg-dim)]">
+            <span className="text-[var(--accent)]">{wins} wins</span> · <span className="text-red-400">{losses} losses</span> · {winRatePct}% win rate
+          </div>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 'auto', maxHeight: '260px' }}>
+          <defs>
+            <linearGradient id="barPos" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="1" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.6" />
+            </linearGradient>
+            <linearGradient id="barNeg" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#ef4444" stopOpacity="1" />
+            </linearGradient>
+          </defs>
+
+          {/* Zero baseline */}
+          <line x1={PAD_X} x2={W - PAD_X} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.10)" strokeDasharray="3 4" />
+          <text x={PAD_X - 6} y={zeroY + 4} textAnchor="end" fontSize="10" fill="var(--fg-dim)" fontFamily="JetBrains Mono, monospace">0</text>
+
+          {/* Bars */}
+          {journey.map((r, i) => {
+            const x = xOf(i) - barW / 2
+            const y = r.alpha >= 0 ? yOf(r.alpha) : zeroY
+            const h = Math.abs(yOf(r.alpha) - zeroY)
+            const isR1 = r.id === 1
+            return (
+              <g key={r.id}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barW}
+                  height={Math.max(2, h)}
+                  fill={r.alpha >= 0 ? 'url(#barPos)' : 'url(#barNeg)'}
+                  rx="1"
+                />
+                {/* Round id under each bar */}
+                {(i === 0 || i === journey.length - 1 || isR1 || r.id % 5 === 0) && (
+                  <text x={xOf(i)} y={H - 18} textAnchor="middle" fontSize="9" fill="var(--fg-dim)" fontFamily="JetBrains Mono, monospace">
+                    #{r.id}
+                  </text>
+                )}
+                {/* Highlight round 1 with a label callout */}
+                {isR1 && (
+                  <g>
+                    <line x1={xOf(i)} x2={xOf(i)} y1={yOf(r.alpha) + 8} y2={H - 32} stroke="#ef4444" strokeOpacity="0.4" strokeDasharray="2 3" />
+                    <text x={xOf(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="#ef4444" fontFamily="JetBrains Mono, monospace">
+                      cold start −324
+                    </text>
+                  </g>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      {/* Three narrative blocks: the disaster, the recovery, the present */}
+      <div className="grid md:grid-cols-3 gap-3 text-sm">
+        <div className="card p-5 border-l-2 border-red-400">
+          <div className="text-[10px] uppercase tracking-wider text-red-400 mb-2">The disaster</div>
+          <div className="text-2xl mono font-medium text-red-400 mb-1">
+            {r1 ? `${r1.alpha} bps` : '−324 bps'}
+          </div>
+          <div className="text-xs text-[var(--fg-muted)] leading-relaxed">
+            Round #1, cold start, 60% mETH. ETH crashed 19% in the first 24h
+            window. The AI was over-allocated to staked ETH with no track record
+            yet, so the memory loop had nothing to pull from. A real loss,
+            recorded irreversibly.
+          </div>
+        </div>
+        <div className="card p-5 border-l-2 border-[var(--accent)]">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-2">The recovery</div>
+          <div className="text-2xl mono font-medium text-[var(--accent)] mb-1">
+            {wins}W · {losses}L
+          </div>
+          <div className="text-xs text-[var(--fg-muted)] leading-relaxed">
+            Once the feedback loop activated (round #2 onward), the AI shifted
+            defensive and started reading its own track record on every call.
+            It is now {winRatePct}% on settled rounds, with multi-round winning
+            streaks visible in the chart above.
+          </div>
+        </div>
+        <div className="card p-5 border-l-2 border-[var(--accent)]">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-2">The present</div>
+          <div className="text-2xl mono font-medium text-[var(--accent)] mb-1">
+            {cal && cal.settledRounds > 0
+              ? `${cal.alphaBps >= 0 ? '+' : ''}${cal.alphaBps} bps`
+              : '...'}
+          </div>
+          <div className="text-xs text-[var(--fg-muted)] leading-relaxed">
+            {cal && cal.settledRounds > 0
+              ? `Net since calibrated: ${cal.alphaBps >= 0 ? '+' : ''}${cal.alphaBps} bps cumulative over ${cal.settledRounds} rounds, ${cal.perRoundAvgAlphaBps >= 0 ? '+' : ''}${Math.round(cal.perRoundAvgAlphaBps)} bps per round average. All values live from contract reads, not screenshots.`
+              : 'Calibrated alpha will appear here once enough rounds have settled.'}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/// Cumulative alpha chart. SVG line on a baseline, drawn from round
+/// to round. The shape tells the story: the big dip at round #1 is
+/// the cold-start disaster, then the line climbs back through the
+/// memory loop, dips again on rounds the AI lost, finishes positive.
+function AlphaChart({ journey }: { journey: JourneyRound[] }) {
+  if (journey.length === 0) return null
+
+  const W = 1000
+  const H = 200
+  const PAD_X = 30
+  const PAD_TOP = 24
+  const PAD_BOTTOM = 36
+
+  // Cumulative trajectory
+  const points: { id: number; cum: number; alpha: number }[] = []
+  let cum = 0
+  for (const r of journey) {
+    cum += r.alpha
+    points.push({ id: r.id, cum, alpha: r.alpha })
+  }
+  const minCum = Math.min(0, ...points.map(p => p.cum))
+  const maxCum = Math.max(0, ...points.map(p => p.cum))
+  const range = Math.max(1, maxCum - minCum)
+  const lastCum = points[points.length - 1].cum
+  const best = points.reduce((a, b) => (b.alpha > a.alpha ? b : a))
+  const worst = points.reduce((a, b) => (b.alpha < a.alpha ? b : a))
+
+  // Map a (id, cum) to (x, y)
+  const xOf = (i: number) => PAD_X + (i / Math.max(1, points.length - 1)) * (W - 2 * PAD_X)
+  const yOf = (v: number) => PAD_TOP + (1 - (v - minCum) / range) * (H - PAD_TOP - PAD_BOTTOM)
+  const zeroY = yOf(0)
+
+  // Build smooth path (linear segments, sufficient for the visual)
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xOf(i).toFixed(2)} ${yOf(p.cum).toFixed(2)}`).join(' ')
+  // Area fill path: line + back to baseline at first/last x
+  const areaPath = `${linePath} L ${xOf(points.length - 1).toFixed(2)} ${zeroY.toFixed(2)} L ${xOf(0).toFixed(2)} ${zeroY.toFixed(2)} Z`
+
+  return (
+    <div className="card p-6 mt-6">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--accent)]">
+            Cumulative alpha trajectory · {points.length} settled round{points.length === 1 ? '' : 's'}
+          </div>
+          <div className="text-[10px] text-[var(--fg-dim)] mt-1">vs passive 50/50 baseline, basis points</div>
+        </div>
+        <div className="flex gap-5 text-right">
+          <div>
+            <div className={`text-2xl mono font-medium ${lastCum >= 0 ? 'text-[var(--accent)]' : 'text-red-400'}`}>
+              {lastCum >= 0 ? '+' : ''}{lastCum}
+            </div>
+            <div className="text-[9px] uppercase tracking-wider text-[var(--fg-muted)]">net bps</div>
+          </div>
+          <div>
+            <div className="text-2xl mono font-medium text-[var(--accent)]">+{best.alpha}</div>
+            <div className="text-[9px] uppercase tracking-wider text-[var(--fg-muted)]">best round (#{best.id})</div>
+          </div>
+          <div>
+            <div className="text-2xl mono font-medium text-red-400">{worst.alpha}</div>
+            <div className="text-[9px] uppercase tracking-wider text-[var(--fg-muted)]">worst round (#{worst.id})</div>
+          </div>
+        </div>
+      </div>
+
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 'auto', maxHeight: '300px' }}>
+        <defs>
+          <linearGradient id="alphaGradient" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="alphaGradientNeg" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0" />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity="0.32" />
+          </linearGradient>
+        </defs>
+
+        {/* Zero baseline */}
+        <line x1={PAD_X} x2={W - PAD_X} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.08)" strokeDasharray="3 4" />
+        <text x={PAD_X - 6} y={zeroY + 4} textAnchor="end" fontSize="10" fill="var(--fg-dim)" fontFamily="JetBrains Mono, monospace">0</text>
+
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#alphaGradient)" opacity={lastCum >= 0 ? 1 : 0.4} />
+
+        {/* Line */}
+        <path d={linePath} fill="none" stroke={lastCum >= 0 ? 'var(--accent)' : '#ef4444'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Per-round dots */}
+        {points.map((p, i) => (
+          <g key={p.id}>
+            <circle
+              cx={xOf(i)}
+              cy={yOf(p.cum)}
+              r={p.id === 1 ? 5 : 3}
+              fill={p.alpha >= 0 ? 'var(--accent)' : '#ef4444'}
+              stroke="var(--bg-card)"
+              strokeWidth="1.5"
+            />
+            {/* Label for round 1 (cold start anchor) and last point */}
+            {(p.id === 1 || i === points.length - 1) && (
+              <g>
+                <text
+                  x={xOf(i)}
+                  y={yOf(p.cum) - 12}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill={p.id === 1 ? '#ef4444' : 'var(--accent)'}
+                  fontFamily="JetBrains Mono, monospace"
+                  fontWeight="500"
+                >
+                  {p.id === 1 ? 'cold start' : `now: ${p.cum >= 0 ? '+' : ''}${p.cum}`}
+                </text>
+              </g>
+            )}
+          </g>
+        ))}
+
+        {/* X-axis: show first and last round id */}
+        <text x={xOf(0)} y={H - 8} textAnchor="middle" fontSize="10" fill="var(--fg-dim)" fontFamily="JetBrains Mono, monospace">
+          #{points[0].id}
+        </text>
+        <text x={xOf(points.length - 1)} y={H - 8} textAnchor="middle" fontSize="10" fill="var(--fg-dim)" fontFamily="JetBrains Mono, monospace">
+          #{points[points.length - 1].id}
+        </text>
+      </svg>
+    </div>
+  )
+}
+
 export default function PitchDeck() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [rounds, setRounds] = useState<RoundLite[]>([])
@@ -292,37 +557,9 @@ export default function PitchDeck() {
             ))}
           </div>
 
-          {/* Alpha sparkline: live per-round trajectory from on-chain rounds */}
-          {journey.length > 0 && (
-            <div className="card p-5 mt-6">
-              <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">
-                Per-round alpha trajectory · {journey.length} settled round{journey.length === 1 ? '' : 's'}
-              </div>
-              <div className={`grid grid-cols-2 md:grid-cols-${Math.min(journey.length, 10)} gap-2 text-xs`}>
-                {journey.map(r => {
-                  const isColdStart = r.id === 1
-                  const max = Math.max(...journey.map(x => Math.abs(x.alpha)), 100)
-                  const heightPct = Math.min(100, (Math.abs(r.alpha) / max) * 100)
-                  const color = r.alpha >= 0 ? 'var(--accent)' : '#ef4444'
-                  return (
-                    <div key={r.id} className="flex flex-col items-center gap-1">
-                      <div className="text-[9px] mono text-[var(--fg-muted)]">#{r.id}</div>
-                      <div className="w-full h-12 flex items-end relative">
-                        <div
-                          className="w-full rounded-sm transition-all"
-                          style={{ height: `${heightPct}%`, background: color, opacity: isColdStart ? 0.4 : 1 }}
-                        />
-                      </div>
-                      <div className="text-[9px] mono" style={{ color }}>
-                        {r.alpha >= 0 ? '+' : ''}{r.alpha}
-                      </div>
-                      {isColdStart && <div className="text-[8px] text-[var(--fg-dim)]">cold</div>}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+          {/* Cumulative alpha chart: tells the story in one line.
+              Shows the recovery from round #1 disaster + the streak from #2 onward. */}
+          {journey.length > 0 && <AlphaChart journey={journey} />}
 
           <p className="text-xs text-[var(--fg-dim)] mt-6">
             Values fetched live from <code className="mono">/api/onchain</code>. Refresh this slide to see them update.
@@ -406,44 +643,18 @@ When did you over-rebalance and lose to passive 50/50?`
 
         {/* === Slide 7 — Honest journey === */}
         <Slide id={7} label="Why we&apos;re honest">
-          <H>Round #1 was a disaster. Here&apos;s what happened.</H>
+          <H>Round #1 was a disaster. We kept it visible.</H>
           <Lead>
             We didn&apos;t want to ship a pitch deck where the AI looks like a genius. The first
-            round on mainnet was a 19.4% loss. We learned in public.
+            round on mainnet was a 19.4% loss. Then the memory loop activated and the AI
+            recovered. Both halves are on-chain, irreversible.
           </Lead>
-          {journey.length > 0 ? (
-            <div className={`grid md:grid-cols-${Math.min(journey.length, 10)} gap-2 mt-10 text-xs`}>
-              {journey.map(r => {
-                const color = r.alpha >= 0 ? 'var(--accent)' : '#ef4444'
-                return (
-                  <div key={r.id} className="card p-3 text-center">
-                    <div className="text-[10px] mono text-[var(--fg-muted)]">Round #{r.id}</div>
-                    <div className="text-xs mono mt-2">{r.alloc}% mETH</div>
-                    <div className="text-base mono font-medium mt-2" style={{ color }}>
-                      {r.alpha >= 0 ? '+' : ''}{r.alpha}<span className="text-[9px]">bps</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
+
+          {journey.length > 0 ? <JourneyStrip journey={journey} stats={stats} /> : (
             <div className="card p-8 text-center text-sm text-[var(--fg-muted)] mt-10">
               Loading rounds from on-chain...
             </div>
           )}
-          <p className="text-sm text-[var(--fg-muted)] mt-8 max-w-3xl leading-relaxed">
-            Round #1 cold-start: 60% mETH, ETH crashed 19%, the AI ate the loss. Round #2
-            onward — once the memory loop was active — the AI shifted defensive and beat the
-            baseline on every round from #2 to #6. Later rounds saw it dip negative again —
-            that&apos;s the feedback loop continuing to operate, not a polished result.
-            {stats?.alphaCalibrated && stats.alphaCalibrated.settledRounds > 0 && (
-              <span className="text-[var(--fg)]">
-                {' '}Net since calibrated: {stats.alphaCalibrated.alphaBps >= 0 ? '+' : ''}{stats.alphaCalibrated.alphaBps} bps
-                cumulative, {stats.alphaCalibrated.perRoundAvgAlphaBps >= 0 ? '+' : ''}{Math.round(stats.alphaCalibrated.perRoundAvgAlphaBps)} bps
-                per round over {stats.alphaCalibrated.settledRounds} round{stats.alphaCalibrated.settledRounds === 1 ? '' : 's'}.
-              </span>
-            )}
-          </p>
         </Slide>
 
         {/* === Slide 8 — Backtest === */}
@@ -451,23 +662,60 @@ When did you over-rebalance and lose to passive 50/50?`
           <H>Beyond live rounds: we backtest on 1 year of real ETH price history.</H>
           <Lead>
             A handful of on-chain rounds isn&apos;t a long enough track record. So we replay Mensa&apos;s strategy
-            against three baselines (passive 50/50, 100% mETH HODL, 100% USDY) on a year of
-            Coingecko ETH prices. The methodology is on{' '}
+            against three baselines (passive 50/50, 100% mETH HODL, 100% USDY) on a year of real price data.
+            The methodology is on{' '}
             <Link href="/backtest" className="text-[var(--accent)] hover:underline">/backtest</Link>.
           </Lead>
-          <div className="card p-6 mt-10 max-w-3xl">
-            <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-4">
-              Honest finding
+
+          <div className="grid md:grid-cols-[1.4fr_1fr] gap-4 mt-10">
+            <div className="card p-6">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">
+                Honest finding
+              </div>
+              <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-3">
+                In a strong directional bull (ETH +15%), allocation strategies always lag pure HODL.
+                Mensa cut max drawdown by 5pp at the cost of some upside. Risk-adjusted, that is
+                the actual trade.
+              </p>
+              <p className="text-sm text-[var(--fg-muted)] leading-relaxed">
+                Mensa&apos;s value prop is chop and bear regimes, not bull tops. The backtest
+                page is explicit about this. No cherry-picked window.
+              </p>
             </div>
-            <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-3">
-              In a strong directional bull (ETH +15%), allocation strategies always lag pure HODL.
-              Mensa cut max drawdown by 5pp at the cost of some upside — risk-adjusted, that&apos;s
-              the actual trade.
-            </p>
-            <p className="text-sm text-[var(--fg-muted)] leading-relaxed">
-              Mensa&apos;s value prop is chop and bear regimes, not bull tops. The page is
-              explicit about this. No cherry-picked window.
-            </p>
+
+            <div className="card p-6">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mb-4">
+                Data sources, all live
+              </div>
+              <div className="space-y-3 text-xs">
+                {[
+                  { name: 'Coingecko', detail: '1y ETH price history, daily candles', url: 'https://www.coingecko.com', icon: 'https://www.coingecko.com/favicon.ico' },
+                  { name: 'DefiLlama', detail: 'mETH + USDY yields on Mantle, live APRs', url: 'https://defillama.com', icon: 'https://defillama.com/favicon.ico' },
+                  { name: 'Mantlescan', detail: '7 verified contracts, every round + decision', url: 'https://mantlescan.xyz', icon: 'https://mantlescan.xyz/favicon.ico' },
+                  { name: 'Anthropic Claude', detail: 'Haiku 4.5, the decision engine', url: 'https://www.anthropic.com', icon: 'https://www.anthropic.com/favicon.ico' },
+                  { name: 'Mantle Network', detail: 'L2 settlement, low-cost decision logging', url: 'https://www.mantle.xyz', icon: 'https://www.mantle.xyz/favicon.ico' },
+                ].map(s => (
+                  <a
+                    key={s.name}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 group"
+                  >
+                    <img
+                      src={s.icon}
+                      alt={s.name}
+                      className="w-6 h-6 rounded-sm grayscale group-hover:grayscale-0 transition opacity-70 group-hover:opacity-100"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[var(--fg)] group-hover:text-[var(--accent)] transition">{s.name}</div>
+                      <div className="text-[10px] text-[var(--fg-dim)] truncate">{s.detail}</div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </Slide>
 

@@ -10,9 +10,9 @@ export async function GET() {
     // 'alphaCalibrated' excludes it so we can show "alpha since AI started learning".
     const [stats, rounds, alpha, alphaCalibrated] = await Promise.all([
       getProtocolStats(),
-      getRecentRounds(20),
-      getAlphaStats(20),
-      getAlphaStats(20, [1]),
+      getRecentRounds(60),
+      getAlphaStats(60),
+      getAlphaStats(60, [1]),
     ])
     return NextResponse.json({
       stats: { ...stats, alpha, alphaCalibrated },
