@@ -52,7 +52,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3 mb-12">
-            <Link href="/deposit" className="btn-accent">Try with $1 USDY</Link>
+            <Link href="/deposit?asset=USDY" className="btn-accent">Try with $1 USDY</Link>
             <Link href="/tournament" className="btn-secondary">Watch the Tournament</Link>
           </div>
 

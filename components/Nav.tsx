@@ -16,7 +16,6 @@ export default function Nav() {
             src="/logo.png"
             alt="Mensa"
             className="w-[66px] h-[66px] transition group-hover:opacity-80"
-            style={{ filter: 'invert(1)' }}
           />
           <span className="font-medium text-lg tracking-tight">mensa</span>
         </Link>
@@ -35,9 +34,10 @@ export default function Nav() {
               href={href}
               className={`px-3 py-1.5 rounded-md transition ${
                 isActive(href)
-                  ? 'text-white font-medium'
+                  ? 'font-medium'
                   : 'text-[var(--fg-muted)] hover:text-white'
               }`}
+              style={isActive(href) ? { color: '#BDD2D1' } : undefined}
             >
               {label}
             </Link>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAccount, useChainId, useWriteContract, useReadContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { ACTIVE_CHAIN } from '@/lib/chains'
@@ -67,7 +68,9 @@ export default function DepositPanel() {
     }
   }
 
-  const [asset, setAsset] = useState<Asset>('mETH')
+  const searchParams = useSearchParams()
+  const initialAsset: Asset = searchParams.get('asset')?.toUpperCase() === 'USDY' ? 'USDY' : 'mETH'
+  const [asset, setAsset] = useState<Asset>(initialAsset)
   const [mode, setMode] = useState<Mode>('deposit')
   const [amount, setAmount] = useState('1')
   const [step, setStep] = useState<'idle' | 'minting' | 'approving' | 'depositing' | 'withdrawing' | 'done'>('idle')
