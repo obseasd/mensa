@@ -391,7 +391,7 @@ export default function PitchDeck() {
         {/* === Slide 1 — Cover === */}
         <Slide id={1}>
           <div className="flex items-center gap-3 mb-12">
-            <img src="/logo.png" alt="Mensa" className="w-[72px] h-[72px]" style={{ filter: 'invert(1)' }} />
+            <img src="/logo.png" alt="Mensa" className="w-[72px] h-[72px]" />
             <span className="text-2xl font-medium tracking-tight">mensa</span>
           </div>
           <h1 className="text-5xl md:text-8xl font-medium tracking-tight leading-[0.95] mb-8">
