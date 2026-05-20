@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Nav from '@/components/Nav'
 import DepositPanel from '@/components/DepositPanel'
 import { ACTIVE_CHAIN, MANTLE_MAINNET } from '@/lib/chains'
@@ -17,7 +18,9 @@ export default function DepositPage() {
           </p>
         </div>
 
-        <DepositPanel />
+        <Suspense fallback={<div className="card p-8 text-center text-sm text-[var(--fg-muted)]">Loading deposit panel...</div>}>
+          <DepositPanel />
+        </Suspense>
 
         <div className="mt-12 text-xs text-[var(--fg-dim)] leading-relaxed space-y-2">
           {isMainnet ? (

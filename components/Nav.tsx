@@ -26,6 +26,7 @@ export default function Nav() {
             { href: '/tournament', label: 'Tournament' },
             { href: '/backtest', label: 'Backtest' },
             { href: '/deposit', label: 'Deposit' },
+            { href: '/gasless', label: 'Gasless' },
             { href: '/leaderboard', label: 'Leaderboard' },
             { href: '/docs', label: 'Docs' },
           ].map(({ href, label }) => (
