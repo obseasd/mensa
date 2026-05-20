@@ -77,6 +77,7 @@ export default function DocsPage() {
           {[
             { href: '#thesis', label: 'Thesis' },
             { href: '#flow', label: 'Flow' },
+            { href: '#post-hackathon', label: 'Post-hackathon roadmap' },
             { href: '#contracts', label: 'Contracts' },
             { href: '#stack', label: 'Stack' },
             { href: '#why-mantle', label: 'Why Mantle' },
@@ -115,6 +116,104 @@ export default function DocsPage() {
         <section id="flow" className="mb-12 scroll-mt-24">
           <h2 className="text-lg font-medium mb-4">Flow</h2>
           <ArchitectureDiagram />
+        </section>
+
+        {/* Post-hackathon roadmap */}
+        <section id="post-hackathon" className="mb-12 scroll-mt-24">
+          <h2 className="text-lg font-medium mb-4">Post-hackathon roadmap</h2>
+          <p className="text-sm text-[var(--fg-muted)] leading-relaxed mb-4">
+            What Mensa ships next, once the Mantle Turing Test judging closes. Each milestone has a concrete trigger, a target metric, and a Mantle-anchored partner where relevant. Mensa is not a one-off hackathon submission; the roadmap below is the post-grant trajectory.
+          </p>
+
+          <div className="grid gap-3">
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Q3 2026</span>
+                <div className="text-sm font-medium">ERC-4626 share model + Velora swap execution</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Migrate the unified user balance to a proper ERC-4626 vault with shares minted at deposit and burned at withdraw. Route every <code className="text-[var(--fg)] mono">executeAllocation</code> through the Velora aggregator with slippage caps and price sanity checks. This is the production substrate every other milestone sits on.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] mt-2">
+                <span className="text-[var(--fg-muted)]">Target:</span> V2 contracts audited (Zellic, ChainSecurity, or Code4rena), $100K real TVL milestone, the first 50 rounds with actual swap-realized returns instead of notional.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Q3 2026</span>
+                <div className="text-sm font-medium">Gasless first deposit via Etherspot Arka</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Integrate the Etherspot Arka Paymaster, the official Mantle AA partner, to sponsor the first deposit + first claim for new users so they can join without holding MNT. Fees come from the BountyPool operations cut (20% of perf fee), making the sponsorship sustainable as TVL scales.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] mt-2">
+                <span className="text-[var(--fg-muted)]">Target:</span> 1-click onboarding from a fresh wallet, measured by the conversion rate from landing page visit to first deposit.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Q4 2026</span>
+                <div className="text-sm font-medium">DAO treasury beta with Mantle ecosystem partners</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Mensa&apos;s primary user segment is DAOs holding idle stablecoin or RWA in their treasury. Engage 3 to 5 ecosystem DAOs (Mantle-native + cross-chain) for a private beta where the AI manages a defined slice of their treasury, with on-chain transparency on every decision.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] mt-2">
+                <span className="text-[var(--fg-muted)]">Target:</span> $1M TVL across pilot partners, with at least 2 partners publicly verifiable on Mantlescan.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Q4 2026</span>
+                <div className="text-sm font-medium">Multi-asset basket extension</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Extend the basket from 2 assets (mETH + USDY) to 4-6 assets covering the live Mantle RWA stack: mUSD, COOK collaboration assets, additional Ondo primitives (OUSG, USDY tranches), and a hedging leg. The Claude reasoning loop scales naturally to N assets since the prompt already accepts asset metadata as a list.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] mt-2">
+                <span className="text-[var(--fg-muted)]">Target:</span> 4-6 assets supported, basket-aware allocation with explicit risk budgets per asset class.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">Q1 2027</span>
+                <div className="text-sm font-medium">Compliance layer for institutional flows</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Mantle&apos;s AI x RWA Path A contemplates institutional capital. Add a per-user KYC gating layer (Brale, Polygon ID, or similar attestation provider) that unlocks institutional deposits while keeping the retail tournament publicly open. The AI operator and contracts stay unchanged; only the deposit gate adds an attestation check.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] mt-2">
+                <span className="text-[var(--fg-muted)]">Target:</span> First institutional pilot signed, regulatory memo published.
+              </p>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--fg-muted)] mono shrink-0 mt-0.5">Q2 2027</span>
+                <div className="text-sm font-medium">Decentralized AI operator rotation</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                Today there is a single AI operator wallet running Claude Haiku 4.5. V3 rotates between multiple LLM backends (Claude, GPT, open-source Llama-derivatives) with the rotation choice itself voted on by reputation-weighted humans every N rounds. The ERC-8004 IdentityRegistry already supports multiple agents, so the contract change is incremental.
+              </p>
+              <p className="text-xs text-[var(--fg-dim)] mt-2">
+                <span className="text-[var(--fg-muted)]">Target:</span> Reduce single-point-of-trust on the operator role; surface model-versus-model alpha as a public benchmark.
+              </p>
+            </div>
+
+            <div className="card p-4 border-[var(--accent)]" style={{ background: 'var(--accent-soft)' }}>
+              <div className="flex items-start gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--accent)] mono shrink-0 mt-0.5">North star</span>
+                <div className="text-sm font-medium">Be the verifiable AI treasury layer for the Mantle RWA stack</div>
+              </div>
+              <p className="text-xs text-[var(--fg-muted)] leading-relaxed">
+                When a DAO, an institutional desk, or a sophisticated retail user wants AI-managed exposure to Mantle RWAs, Mensa is the default substrate: every decision on-chain, every reasoning trace auditable, every claim of alpha computable from contract reads, and humans can put their own allocation on the line against the AI in the tournament.
+              </p>
+            </div>
+          </div>
         </section>
 
         {/* Contracts */}
