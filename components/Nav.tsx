@@ -16,6 +16,7 @@ export default function Nav() {
             src="/logo.png"
             alt="Mensa"
             className="w-[66px] h-[66px] transition group-hover:opacity-80"
+            style={{ filter: 'invert(1)' }}
           />
           <span className="font-medium text-lg tracking-tight">mensa</span>
         </Link>
