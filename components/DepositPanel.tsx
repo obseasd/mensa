@@ -47,10 +47,9 @@ function fmtUsd(n: number): string {
 export default function DepositPanel() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
-  const { switchChain, switchChainAsync } = useSwitchChain()
+  const { switchChainAsync } = useSwitchChain()
   const isMainnet = chainId === mantle.id
   const isMantle = chainId === mantle.id || chainId === mantleSepolia.id
-  const isOnSignChain = chainId === ACTIVE_CHAIN.id
 
   // Ensure the wallet is on the right chain before any signed action.
   // We ALWAYS call switchChainAsync (not just on cached mismatch): wagmi's
@@ -286,41 +285,6 @@ export default function DepositPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Chain banner — make the signing chain mismatch impossible to miss */}
-      <div
-        className={`card p-3 flex items-center justify-between gap-3 ${
-          isOnSignChain ? '' : 'border-orange-400/40'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ background: isOnSignChain ? 'var(--accent)' : '#f97316' }}
-          />
-          <div className="text-xs">
-            <span className="text-[var(--fg-muted)]">Signing on </span>
-            <span className={isOnSignChain ? 'text-[var(--fg)]' : 'text-orange-400'}>
-              {chainId === mantle.id
-                ? 'Mantle Mainnet'
-                : chainId === mantleSepolia.id
-                ? 'Mantle Sepolia'
-                : `Chain ${chainId} (wrong)`}
-            </span>
-            {!isOnSignChain && (
-              <span className="text-[var(--fg-dim)]"> · Mensa is on {ACTIVE_CHAIN.name}</span>
-            )}
-          </div>
-        </div>
-        {!isOnSignChain && (
-          <button
-            onClick={() => switchChain({ chainId: ACTIVE_CHAIN.id })}
-            className="text-[10px] uppercase tracking-wider px-2 py-1 rounded border border-orange-400/40 text-orange-400 hover:bg-orange-400/10 transition"
-          >
-            Switch to {ACTIVE_CHAIN.name}
-          </button>
-        )}
-      </div>
-
       {/* Stats — wallet, deposit, eligibility */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="card p-4">
