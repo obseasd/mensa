@@ -8,7 +8,6 @@ import { ACTIVE_CHAIN } from '@/lib/chains'
 import { mantle, mantleSepolia } from '@/lib/wagmi'
 import Tooltip, { GLOSSARY } from './Tooltip'
 import { showToast } from './Toast'
-import AABadge from './AABadge'
 
 const ERC20_ABI = [
   { name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'a', type: 'address' }], outputs: [{ type: 'uint256' }] },
@@ -321,9 +320,6 @@ export default function DepositPanel() {
           </button>
         )}
       </div>
-
-      {/* AA / Etherspot Arka wiring — ambient badge, shown when connected */}
-      <AABadge />
 
       {/* Stats — wallet, deposit, eligibility */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
