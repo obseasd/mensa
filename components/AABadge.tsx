@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAccount, useWalletClient } from 'wagmi'
-import { getPrimeSdk, getSmartWalletAddress } from '@/lib/etherspot'
+import { useAccount } from 'wagmi'
+import { getPrimeSdk, getSmartWalletAddress, type Eip1193Provider } from '@/lib/etherspot'
 
 /// Ambient badge that surfaces Mensa's Etherspot Account Abstraction wiring
 /// without claiming the user-facing deposit flow is gasless today. The smart
@@ -12,12 +12,18 @@ import { getPrimeSdk, getSmartWalletAddress } from '@/lib/etherspot'
 /// milestone documented in /docs#post-hackathon.
 export default function AABadge() {
   const { isConnected } = useAccount()
-  const { data: walletClient } = useWalletClient()
   const [smartWallet, setSmartWallet] = useState<string | null>(null)
   const [errored, setErrored] = useState(false)
 
   useEffect(() => {
-    if (!isConnected || !walletClient) {
+    // Etherspot's wallet provider needs window.ethereum (EIP-1193), not
+    // wagmi's viem walletClient. Grab the raw injected provider directly.
+    const provider =
+      typeof window !== 'undefined'
+        ? ((window as unknown as { ethereum?: Eip1193Provider }).ethereum ?? null)
+        : null
+
+    if (!isConnected || !provider) {
       setSmartWallet(null)
       setErrored(false)
       return
@@ -25,10 +31,11 @@ export default function AABadge() {
     let cancelled = false
     async function derive() {
       try {
-        const sdk = getPrimeSdk(walletClient as unknown as Parameters<typeof getPrimeSdk>[0])
+        const sdk = await getPrimeSdk(provider!)
         const addr = await getSmartWalletAddress(sdk)
         if (!cancelled) setSmartWallet(addr)
-      } catch {
+      } catch (e) {
+        console.warn('[mensa AABadge] Etherspot SDK init failed:', e)
         if (!cancelled) setErrored(true)
       }
     }
@@ -36,7 +43,7 @@ export default function AABadge() {
     return () => {
       cancelled = true
     }
-  }, [isConnected, walletClient])
+  }, [isConnected])
 
   if (!isConnected) return null
 

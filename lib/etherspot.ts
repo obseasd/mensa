@@ -24,8 +24,7 @@
 ///   - The operator wallet deposits MNT into the paymaster contract on Mantle.
 ///   - Without funding, sponsored txs revert with "insufficient paymaster balance".
 
-import { PrimeSdk, EtherspotBundler } from '@etherspot/prime-sdk'
-import type { WalletProviderLike } from '@etherspot/prime-sdk'
+import { PrimeSdk, EtherspotBundler, Web3eip1193WalletProvider } from '@etherspot/prime-sdk'
 
 export const ETHERSPOT_API_KEY =
   process.env.NEXT_PUBLIC_ETHERSPOT_API_KEY || 'etherspot_public_key'
@@ -34,12 +33,19 @@ export const MANTLE_CHAIN_ID = 5000
 export const MANTLE_BUNDLER_URL = `https://rpc.etherspot.io/v1/${MANTLE_CHAIN_ID}`
 export const ARKA_PAYMASTER_URL = 'https://arka.etherspot.io'
 
-/// Build a PrimeSdk instance bound to the user's signing device.
-///
-/// The walletProvider can come from window.ethereum (MetaMask), from a private
-/// key string, or from a wagmi viem client. For our flow we pass MetaMask via
-/// a WalletProviderLike wrapper.
-export function getPrimeSdk(walletProvider: WalletProviderLike): PrimeSdk {
+/// Minimal EIP-1193 surface the Etherspot SDK consumes (window.ethereum-like).
+/// We accept this shape rather than wagmi's viem WalletClient because Etherspot
+/// expects the lower-level request-based interface.
+export interface Eip1193Provider {
+  request: (args: { method: string; params?: unknown[] | object }) => Promise<unknown>
+}
+
+/// Build a PrimeSdk instance bound to the user's MetaMask (or any EIP-1193
+/// provider). We wrap the raw provider with Etherspot's
+/// Web3eip1193WalletProvider, which adapts the EIP-1193 request method into
+/// the SDK's internal signer interface.
+export async function getPrimeSdk(provider: Eip1193Provider): Promise<PrimeSdk> {
+  const walletProvider = await Web3eip1193WalletProvider.connect(provider as never)
   return new PrimeSdk(walletProvider, {
     chainId: MANTLE_CHAIN_ID,
     bundlerProvider: new EtherspotBundler(MANTLE_CHAIN_ID, ETHERSPOT_API_KEY),
