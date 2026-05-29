@@ -141,7 +141,14 @@ export default function Home() {
       </main>
 
       {/* Footer — Mantle-inspired layout: brand block on left with socials, columns on right */}
-      <footer className="relative z-10 border-t border-[var(--border)] mt-20" style={{ background: '#0F1010' }}>
+      <footer
+        className="relative z-10 border-t border-[var(--border)] mt-20"
+        style={{
+          background: 'rgba(15, 16, 16, 0.85)',
+          backdropFilter: 'blur(22px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(22px) saturate(160%)',
+        }}
+      >
         <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
           {/* Brand block */}
           <div>

@@ -9,7 +9,14 @@ export default function Nav() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <nav className="relative z-50 border-b border-[var(--border)]" style={{ background: '#0F1010' }}>
+    <nav
+      className="sticky top-0 z-50 border-b border-[var(--border)]"
+      style={{
+        background: 'rgba(15, 16, 16, 0.85)',
+        backdropFilter: 'blur(22px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(22px) saturate(160%)',
+      }}
+    >
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-3 group">
           <img

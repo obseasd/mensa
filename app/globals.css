@@ -83,12 +83,17 @@ body::after {
 }
 
 .card {
-  background: var(--bg-card);
+  background: rgba(10, 10, 10, 0.55);
   border: 1px solid var(--border);
   border-radius: 12px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
-.card:hover { border-color: var(--border-strong); }
+.card:hover {
+  border-color: var(--border-strong);
+  background: rgba(10, 10, 10, 0.65);
+}
 
 .btn-primary {
   background: var(--fg);
