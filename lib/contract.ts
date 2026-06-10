@@ -594,6 +594,31 @@ export async function getBountyStats() {
   }
 }
 
+/// Multicall3 on Mantle Mainnet, canonical address (same as 99% of EVM chains).
+/// Lets us bundle N `rounds(i)` reads into a single eth_call, cutting
+/// /api/onchain from ~60 HTTP roundtrips down to 2 (one totalRounds, one
+/// multicall). Verified deployed on Mantle 2026-05-25 via eth_getCode.
+const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11'
+const MULTICALL3_ABI = [
+  'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) external payable returns ((bool success, bytes returnData)[] returnData)',
+] as const
+
+const ROUND_TUPLE_ABI = [
+  'uint256 id',
+  'uint64 startTime',
+  'uint64 settlementTime',
+  'uint256 startMethPrice',
+  'uint256 startUsdyPrice',
+  'uint256 settleMethPrice',
+  'uint256 settleUsdyPrice',
+  'uint8 aiAllocMeth',
+  'uint8 humanAllocMeth',
+  'int256 aiReturnBps',
+  'int256 humanReturnBps',
+  'uint8 outcome',
+  'bool settled',
+]
+
 export async function getRecentRounds(limit = 10): Promise<OnChainRound[]> {
   const provider = getProvider()
   const tournament = new ethers.Contract(ACTIVE_CHAIN.contracts.tournamentVault, TOURNAMENT_ABI, provider)
@@ -601,6 +626,50 @@ export async function getRecentRounds(limit = 10): Promise<OnChainRound[]> {
   if (total === 0) return []
 
   const ids = Array.from({ length: Math.min(limit, total) }, (_, i) => total - i)
+
+  // Try multicall3 first: encode N rounds(i) calls into a single eth_call.
+  // Fallback to the slow per-call path if multicall fails (e.g. RPC quirk).
+  try {
+    const tournamentIface = new ethers.Interface(TOURNAMENT_ABI)
+    const calls = ids.map(id => ({
+      target: ACTIVE_CHAIN.contracts.tournamentVault,
+      allowFailure: true,
+      callData: tournamentIface.encodeFunctionData('rounds', [id]),
+    }))
+    const multicall = new ethers.Contract(MULTICALL3_ADDRESS, MULTICALL3_ABI, provider)
+    const results = await multicall.aggregate3.staticCall(calls)
+    const decoder = ethers.AbiCoder.defaultAbiCoder()
+    const rounds: OnChainRound[] = []
+    for (let i = 0; i < results.length; i++) {
+      const [success, returnData] = results[i]
+      if (!success || returnData === '0x') continue
+      try {
+        const r = decoder.decode(ROUND_TUPLE_ABI, returnData)
+        rounds.push({
+          id: Number(r[0]),
+          startTime: Number(r[1]),
+          settlementTime: Number(r[2]),
+          startMethPrice: r[3] as bigint,
+          startUsdyPrice: r[4] as bigint,
+          settleMethPrice: r[5] as bigint,
+          settleUsdyPrice: r[6] as bigint,
+          aiAllocMeth: Number(r[7]),
+          humanAllocMeth: Number(r[8]),
+          aiReturnBps: r[9] as bigint,
+          humanReturnBps: r[10] as bigint,
+          outcome: Number(r[11]),
+          settled: Boolean(r[12]),
+        })
+      } catch {
+        /* decode failure for one round is non-fatal */
+      }
+    }
+    if (rounds.length > 0) return rounds
+  } catch (e) {
+    console.warn('[contract] multicall3 failed, falling back to per-round reads:', (e as Error).message)
+  }
+
+  // Fallback: per-call reads (slow with batchMaxCount=1 but reliable).
   const results = await Promise.all(
     ids.map(async (id) => {
       const r = await tournament.rounds(id)
