@@ -120,7 +120,9 @@ async function fetchYieldAPRs(): Promise<{ mETHYieldAPR: number; usdyYieldAPR: n
 }
 
 export async function fetchMarketState(provider?: ethers.JsonRpcProvider): Promise<MarketState> {
-  const rpc = provider || new ethers.JsonRpcProvider(MANTLE_MAINNET.rpc)
+  // Pin batchMaxCount=1 to match lib/contract.ts. rpc.mantle.xyz rejects
+  // large JSON-RPC batches; one HTTP request per call avoids the issue.
+  const rpc = provider || new ethers.JsonRpcProvider(MANTLE_MAINNET.rpc, undefined, { batchMaxCount: 1 })
 
   // Read mETH exchange rate (eth per 1 mETH) — on-chain
   let methToEthRate = 1.0

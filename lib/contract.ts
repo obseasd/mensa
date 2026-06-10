@@ -1,4 +1,13 @@
-// Reads from deployed Mensa contracts on Mantle Sepolia
+// Reads from deployed Mensa contracts on Mantle Mainnet.
+//
+// Provider note: rpc.mantle.xyz rejects JSON-RPC batches above a few dozen
+// calls (returns "execution reverted, data: 0x" for the whole batch, even if
+// each individual call would succeed). Ethers v6 greedily batches concurrent
+// promises, so reading 60 rounds + protocol stats + 2 alpha snapshots in
+// Promise.all trips the limit. Pin batchMaxCount=1 so each call gets its own
+// HTTP request, identical pattern to the Bow provider on Arc which hit the
+// same issue. Slightly slower (one HTTP roundtrip per read instead of one
+// per batch) but reliable.
 import { ethers } from 'ethers'
 import { ACTIVE_CHAIN } from './chains'
 
@@ -80,7 +89,7 @@ export interface OnChainRound {
 }
 
 function getProvider() {
-  return new ethers.JsonRpcProvider(ACTIVE_CHAIN.rpc)
+  return new ethers.JsonRpcProvider(ACTIVE_CHAIN.rpc, undefined, { batchMaxCount: 1 })
 }
 
 export interface AlphaStats {
