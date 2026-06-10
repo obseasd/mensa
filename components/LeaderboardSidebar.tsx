@@ -26,7 +26,10 @@ export default function LeaderboardSidebar() {
   }, [])
 
   return (
-    <div className="space-y-3 lg:sticky lg:top-6 lg:self-start">
+    <div
+      className="space-y-3 lg:sticky lg:top-24 lg:self-start lg:overflow-y-auto"
+      style={{ maxHeight: 'calc(100vh - 8rem)' }}
+    >
       {/* How rewards work */}
       <div className="card p-5">
         <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-3">

@@ -122,7 +122,20 @@ function formatHumanConsensus(consensus) {
 // Walk recent rounds and settle any whose 24h timer has expired.
 // Uses current market prices for the settle and a 50% default for human
 // aggregate when nobody voted (conservative neutral baseline).
+//
+// Two safety gates added after round #65 was killed by a Coingecko fallback
+// to $3500 (recorded forever as a fake +71% mETH move):
+//   1. state.pricesOk must be true (no settle with null / fallback prices)
+//   2. The implied move vs startPrice must be plausible (<30%). If a settle
+//      would write a >30% mETH move in 24h, refuse and skip — let a later
+//      cycle pick it up when the off-chain price is fresh again.
+const MAX_SETTLE_MOVE_BPS = 3000  // 30%
+
 async function settleExpiredRounds(wallet, state) {
+  if (!state.pricesOk) {
+    console.log('  [settle] skipping: pricesOk=false (Coingecko failed, retry next cycle)')
+    return []
+  }
   const t = new ethers.Contract(TOURNAMENT_ADDR, TOURNAMENT_ABI, wallet)
   const total = Number(await t.totalRounds())
   if (total === 0) return []
@@ -149,6 +162,26 @@ async function settleExpiredRounds(wallet, state) {
 
     const settleMethPrice = BigInt(Math.floor(state.methPrice * 1e8))
     const settleUsdyPrice = BigInt(Math.floor(state.usdyPrice * 1e8))
+
+    // Sanity check vs the round's start prices. If the implied move is
+    // implausibly large, skip rather than write garbage on chain.
+    const startMethPrice = BigInt(r.startMethPrice)
+    const startUsdyPrice = BigInt(r.startUsdyPrice)
+    if (startMethPrice > 0n) {
+      const methDiff = Number(((settleMethPrice * 10000n) / startMethPrice) - 10000n)
+      if (Math.abs(methDiff) > MAX_SETTLE_MOVE_BPS) {
+        console.warn(`  [settle] round #${id} refused: mETH ${methDiff} bps move > ${MAX_SETTLE_MOVE_BPS} bps threshold. Coingecko probably stale.`)
+        continue
+      }
+    }
+    if (startUsdyPrice > 0n) {
+      const usdyDiff = Number(((settleUsdyPrice * 10000n) / startUsdyPrice) - 10000n)
+      if (Math.abs(usdyDiff) > MAX_SETTLE_MOVE_BPS) {
+        console.warn(`  [settle] round #${id} refused: USDY ${usdyDiff} bps move > ${MAX_SETTLE_MOVE_BPS} bps threshold.`)
+        continue
+      }
+    }
+
     console.log(`  settling round #${id} mETH=$${state.methPrice.toFixed(2)} USDY=$${state.usdyPrice.toFixed(4)} humanAggr=${aggregateHumanAlloc}%`)
     try {
       const tx = await t.settleRound(id, settleMethPrice, settleUsdyPrice, aggregateHumanAlloc)
@@ -263,6 +296,12 @@ You will receive the current market state and must respond with:
 
 Format your response as valid JSON only. No prose outside the JSON.`
 
+// Returns the live ETH price, or null on failure. The previous version
+// silently returned $3500 on any error, which then leaked into the on-chain
+// settle prices when Coingecko had a blip. Round #65 was killed by exactly
+// this (settle wrote a 3500*1.04 ≈ $3640 fallback while the real price was
+// ~$2115 → a fake +71% move recorded forever). Now we surface null and let
+// the caller decide whether to skip the cycle.
 async function fetchEthPrice() {
   try {
     const r = await fetch(COINGECKO_PRICE)
@@ -271,7 +310,7 @@ async function fetchEthPrice() {
     const px = j?.ethereum?.usd
     if (typeof px === 'number' && px > 0) return px
   } catch {}
-  return 3500
+  return null
 }
 
 async function fetchYieldAPRs() {
@@ -296,10 +335,11 @@ async function fetchMarketState(currentMeth) {
   return {
     methYieldAPR: yields.methYieldAPR,
     usdyYieldAPR: yields.usdyYieldAPR,
-    ethPrice,
-    methPrice: ethPrice * 1.04,
+    ethPrice,                                // null if Coingecko failed
+    methPrice: ethPrice ? ethPrice * 1.04 : null,
     usdyPrice: 1.05,
     currentMeth,
+    pricesOk: ethPrice !== null,             // explicit flag for downstream gates
   }
 }
 
@@ -382,6 +422,15 @@ async function runOnce(agent) {
   const currentMeth = Number(await agent.currentMethAllocPct())
   const state = await fetchMarketState(currentMeth)
   const apiKey = process.env.ANTHROPIC_API_KEY
+
+  // If the off-chain price feed failed, skip this whole cycle. We do NOT
+  // want to write fallback prices on chain (the round #65 disaster came
+  // from exactly this: Coingecko blip + silent fallback to $3500). Better
+  // to wait 30 min and try again with fresh data.
+  if (!state.pricesOk) {
+    console.warn(`[${new Date().toISOString()}] Skipping cycle: ethPrice unavailable. Will retry next interval.`)
+    return
+  }
 
   // Settle any rounds whose 24h timer has expired BEFORE deciding,
   // so the new decision benefits from up-to-date track record.

@@ -1,6 +1,13 @@
 export default function TournamentHowItWorks() {
   return (
-    <div className="card p-5 lg:sticky lg:top-6">
+    // Nav is now sticky at top-0 with ~80px height, so offset this sidebar's
+    // sticky position by 6rem to clear it. Cap height to viewport so long
+    // content scrolls inside the card instead of getting clipped under the
+    // browser bottom edge.
+    <div
+      className="card p-5 lg:sticky lg:top-24 lg:overflow-y-auto"
+      style={{ maxHeight: 'calc(100vh - 8rem)' }}
+    >
       <div className="text-[10px] uppercase tracking-wider text-[var(--accent)] mb-4">
         How it works
       </div>

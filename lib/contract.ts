@@ -109,6 +109,27 @@ export interface AlphaStats {
   }>
 }
 
+/// Plausibility threshold: a single 24h round where mETH OR USDY moved by
+/// more than ±30% is almost certainly a data corruption (Coingecko fallback
+/// to the hardcoded $3500 anchor, RPC blip on the settle path, etc), not a
+/// genuine market move. mETH tracks ETH which has never moved 30% in 24h
+/// even in extreme regimes, and USDY is a T-bill token that should move <1bp.
+/// We exclude these rounds from the calibrated alpha so single corrupted
+/// settles do not skew the headline metric. The raw rounds array still
+/// contains them so the tournament history table can flag them visibly.
+const MAX_PLAUSIBLE_MOVE_BPS = 3000
+
+function isImplausibleRound(r: OnChainRound): boolean {
+  const startMeth = Number(r.startMethPrice)
+  const settleMeth = Number(r.settleMethPrice)
+  const startUsdy = Number(r.startUsdyPrice)
+  const settleUsdy = Number(r.settleUsdyPrice)
+  if (startMeth === 0 || startUsdy === 0) return false
+  const methAbsBps = Math.abs(Math.round(((settleMeth - startMeth) / startMeth) * 10000))
+  const usdyAbsBps = Math.abs(Math.round(((settleUsdy - startUsdy) / startUsdy) * 10000))
+  return methAbsBps > MAX_PLAUSIBLE_MOVE_BPS || usdyAbsBps > MAX_PLAUSIBLE_MOVE_BPS
+}
+
 /// Compute alpha stats from already-fetched rounds. Same arithmetic as
 /// `getAlphaStats` but skips the on-chain round reads so the caller can
 /// pass a single rounds array fetched once and compute multiple alpha
@@ -125,6 +146,9 @@ export function computeAlphaFromRounds(rounds: OnChainRound[], skipRoundIds: num
   for (const r of rounds) {
     if (!r.settled) continue
     if (skip.has(r.id)) continue
+    // Skip rounds with implausible price moves (data corruption from
+    // off-chain settle path, see isImplausibleRound for the reasoning).
+    if (isImplausibleRound(r)) continue
     const startMeth = Number(r.startMethPrice)
     const settleMeth = Number(r.settleMethPrice)
     const startUsdy = Number(r.startUsdyPrice)
