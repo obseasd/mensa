@@ -109,6 +109,59 @@ export interface AlphaStats {
   }>
 }
 
+/// Compute alpha stats from already-fetched rounds. Same arithmetic as
+/// `getAlphaStats` but skips the on-chain round reads so the caller can
+/// pass a single rounds array fetched once and compute multiple alpha
+/// snapshots from it. Critical for /api/onchain perf: rpc.mantle.xyz with
+/// batchMaxCount=1 turns each round read into its own HTTP roundtrip
+/// (~120ms), so re-fetching 60 rounds three times costs ~24s vs ~8s
+/// when shared.
+export function computeAlphaFromRounds(rounds: OnChainRound[], skipRoundIds: number[] = []): AlphaStats {
+  const skip = new Set(skipRoundIds)
+  let cumAi = 0
+  let cumBase = 0
+  let settled = 0
+  const recent: AlphaStats['recent'] = []
+  for (const r of rounds) {
+    if (!r.settled) continue
+    if (skip.has(r.id)) continue
+    const startMeth = Number(r.startMethPrice)
+    const settleMeth = Number(r.settleMethPrice)
+    const startUsdy = Number(r.startUsdyPrice)
+    const settleUsdy = Number(r.settleUsdyPrice)
+    if (startMeth === 0 || startUsdy === 0) continue
+    const methRetBps = Math.round(((settleMeth - startMeth) / startMeth) * 10000)
+    const usdyRetBps = Math.round(((settleUsdy - startUsdy) / startUsdy) * 10000)
+    const baselineBps = Math.round((methRetBps + usdyRetBps) / 2)
+    const aiBps = Number(r.aiReturnBps)
+    cumAi += aiBps
+    cumBase += baselineBps
+    settled++
+    const optimalAllocMeth = methRetBps > usdyRetBps ? 100 : 0
+    const optimalReturnBps = optimalAllocMeth === 100 ? methRetBps : usdyRetBps
+    recent.push({
+      id: r.id,
+      aiAllocMeth: r.aiAllocMeth,
+      aiReturnBps: aiBps,
+      baselineReturnBps: baselineBps,
+      optimalAllocMeth,
+      optimalReturnBps,
+    })
+  }
+  const alphaBps = cumAi - cumBase
+  const perRoundAvgAlphaBps = settled > 0 ? alphaBps / settled : 0
+  const annualizedAlphaPct = (perRoundAvgAlphaBps * 365) / 100
+  return {
+    settledRounds: settled,
+    cumulativeAiBps: cumAi,
+    cumulativeBaselineBps: cumBase,
+    alphaBps,
+    perRoundAvgAlphaBps,
+    annualizedAlphaPct,
+    recent,
+  }
+}
+
 /// Compute alpha stats over the last `limit` settled rounds.
 /// `skipRoundIds` lets us exclude rounds (e.g. round #1 was the cold-start
 /// before the memory loop existed; for "since calibrated" we pass [1]).

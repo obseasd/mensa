@@ -1,19 +1,26 @@
 import { NextResponse } from 'next/server'
-import { getProtocolStats, getRecentRounds, getAlphaStats } from '@/lib/contract'
+import { getProtocolStats, getRecentRounds, computeAlphaFromRounds } from '@/lib/contract'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+// rpc.mantle.xyz batchMaxCount=1 makes each read its own HTTP roundtrip,
+// so the full fan-out can take 5-10s. Give Vercel headroom past the
+// default 10s serverless timeout.
+export const maxDuration = 30
 
 export async function GET() {
   try {
-    // Round #1 was the genesis decision before the memory loop existed.
-    // 'alphaCalibrated' excludes it so we can show "alpha since AI started learning".
-    const [stats, rounds, alpha, alphaCalibrated] = await Promise.all([
+    // Fetch protocol stats + rounds in parallel. Then derive both alpha
+    // snapshots (full + calibrated, which excludes the cold-start round #1)
+    // locally from the same rounds array instead of re-fetching them twice.
+    // This cuts the work from ~3x rounds reads down to 1x.
+    const [stats, rounds] = await Promise.all([
       getProtocolStats(),
       getRecentRounds(60),
-      getAlphaStats(60),
-      getAlphaStats(60, [1]),
     ])
+    const alpha = computeAlphaFromRounds(rounds)
+    const alphaCalibrated = computeAlphaFromRounds(rounds, [1])
+
     return NextResponse.json({
       stats: { ...stats, alpha, alphaCalibrated },
       rounds: rounds.map(r => ({
