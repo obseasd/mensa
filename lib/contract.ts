@@ -120,11 +120,16 @@ export interface AlphaStats {
 const MAX_PLAUSIBLE_MOVE_BPS = 3000
 
 export function isImplausibleRound(r: OnChainRound): boolean {
+  // Only settled rounds can be implausible. An unsettled round has
+  // settleMethPrice = 0 by default, which would naively look like a
+  // -10000 bps move (price went from $X to $0). Skip those.
+  if (!r.settled) return false
   const startMeth = Number(r.startMethPrice)
   const settleMeth = Number(r.settleMethPrice)
   const startUsdy = Number(r.startUsdyPrice)
   const settleUsdy = Number(r.settleUsdyPrice)
   if (startMeth === 0 || startUsdy === 0) return false
+  if (settleMeth === 0 || settleUsdy === 0) return false
   const methAbsBps = Math.abs(Math.round(((settleMeth - startMeth) / startMeth) * 10000))
   const usdyAbsBps = Math.abs(Math.round(((settleUsdy - startUsdy) / startUsdy) * 10000))
   return methAbsBps > MAX_PLAUSIBLE_MOVE_BPS || usdyAbsBps > MAX_PLAUSIBLE_MOVE_BPS
