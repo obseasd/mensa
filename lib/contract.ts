@@ -119,7 +119,7 @@ export interface AlphaStats {
 /// contains them so the tournament history table can flag them visibly.
 const MAX_PLAUSIBLE_MOVE_BPS = 3000
 
-function isImplausibleRound(r: OnChainRound): boolean {
+export function isImplausibleRound(r: OnChainRound): boolean {
   const startMeth = Number(r.startMethPrice)
   const settleMeth = Number(r.settleMethPrice)
   const startUsdy = Number(r.startUsdyPrice)

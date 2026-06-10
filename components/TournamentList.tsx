@@ -386,16 +386,6 @@ export default function TournamentList() {
                   const isOpen = expandedId === r.id
                   const winnerLabel = r.outcome === 1 ? 'AI' : r.outcome === 2 ? 'Baseline' : 'Tie'
                   const myVote = userVotesByRound.get(r.id)
-                  // Flag rounds with implausible 24h moves (>30% on mETH or USDY).
-                  // These are price-feed corruptions, not real losses. Excluded
-                  // from the calibrated alpha but kept in the table for honesty.
-                  const startMeth = Number(r.startMethPrice ?? 0)
-                  const settleMeth = Number(r.settleMethPrice ?? 0)
-                  const startUsdy = Number(r.startUsdyPrice ?? 0)
-                  const settleUsdy = Number(r.settleUsdyPrice ?? 0)
-                  const methAbsBps = startMeth > 0 ? Math.abs(Math.round(((settleMeth - startMeth) / startMeth) * 10000)) : 0
-                  const usdyAbsBps = startUsdy > 0 ? Math.abs(Math.round(((settleUsdy - startUsdy) / startUsdy) * 10000)) : 0
-                  const isAnomaly = methAbsBps > 3000 || usdyAbsBps > 3000
 
                   return (
                     <div key={r.id}>
@@ -426,18 +416,9 @@ export default function TournamentList() {
                           {formatBpsRaw(alphaBps)}
                         </div>
                         <div className="text-right">
-                          {isAnomaly ? (
-                            <span
-                              className="text-[10px] px-2 py-0.5 rounded bg-orange-400/15 text-orange-300"
-                              title={`Implausible 24h move (mETH ${methAbsBps}bps, USDY ${usdyAbsBps}bps). Likely off-chain price feed glitch at settle time, not a real loss. Excluded from calibrated alpha.`}
-                            >
-                              Anomaly
-                            </span>
-                          ) : (
-                            <span className={`text-[10px] px-2 py-0.5 rounded ${
-                              r.outcome === 1 ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-white/5 text-white'
-                            }`}>{winnerLabel}</span>
-                          )}
+                          <span className={`text-[10px] px-2 py-0.5 rounded ${
+                            r.outcome === 1 ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'bg-white/5 text-white'
+                          }`}>{winnerLabel}</span>
                         </div>
                       </button>
                       {myVote && (
