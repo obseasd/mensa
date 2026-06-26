@@ -330,7 +330,7 @@ async function fetchYieldAPRs() {
   }
 }
 
-async function fetchMarketState(currentMeth) {
+async function fetchMarketState(currentMeth, hoursSinceLastRebalance = 0) {
   const [ethPrice, yields] = await Promise.all([fetchEthPrice(), fetchYieldAPRs()])
   return {
     methYieldAPR: yields.methYieldAPR,
@@ -339,12 +339,26 @@ async function fetchMarketState(currentMeth) {
     methPrice: ethPrice ? ethPrice * 1.04 : null,
     usdyPrice: 1.05,
     currentMeth,
+    hoursSinceLastRebalance,
     pricesOk: ethPrice !== null,             // explicit flag for downstream gates
   }
 }
 
 async function decideWithClaude(state, apiKey, trackRecord, humanConsensus) {
   const client = new Anthropic({ apiKey })
+
+  // Staleness pressure: if the AI has been HOLDing for too long, the system
+  // looks dead to observers even when it is technically correct. Inject an
+  // explicit reminder that absence of action is itself a choice, and that
+  // a 3pp+ tilt in the direction the spread suggests is the right move
+  // when the current alloc has been frozen for 48h+.
+  const stalenessLine = state.hoursSinceLastRebalance > 48
+    ? `\nSTALENESS WARNING: ${Math.floor(state.hoursSinceLastRebalance)}h since the last rebalance.
+A static allocation through changing markets is itself a bet you may not have meant to make.
+If the spread or your track record points in any direction, propose at least a 3pp shift in that direction now.
+HOLD is only acceptable here if you can articulate why every signal in your context literally says "do not move".\n`
+    : ''
+
   const userMessage = `Current market state:
 
 mETH:
@@ -358,9 +372,10 @@ USDY:
 
 Treasury:
   Current mETH allocation: ${state.currentMeth}%
+  Hours since last rebalance: ${Math.floor(state.hoursSinceLastRebalance)}
 
 Spread (mETH APR - USDY APR): ${(state.methYieldAPR - state.usdyYieldAPR).toFixed(2)}pp
-
+${stalenessLine}
 ${trackRecord}
 
 ${humanConsensus}
@@ -420,7 +435,12 @@ function fmtPrice(usd) {
 
 async function runOnce(agent) {
   const currentMeth = Number(await agent.currentMethAllocPct())
-  const state = await fetchMarketState(currentMeth)
+  const lastRebalanceSec = Number(await agent.lastRebalanceAt())
+  const nowSec = Math.floor(Date.now() / 1000)
+  const hoursSinceLastRebalance = lastRebalanceSec > 0
+    ? (nowSec - lastRebalanceSec) / 3600
+    : 0
+  const state = await fetchMarketState(currentMeth, hoursSinceLastRebalance)
   const apiKey = process.env.ANTHROPIC_API_KEY
 
   // If the off-chain price feed failed, skip this whole cycle. We do NOT
