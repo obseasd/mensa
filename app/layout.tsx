@@ -24,6 +24,13 @@ export const metadata: Metadata = {
     title: "Mensa — The AI treasury that proves itself",
     description: "Intelligent RWA portfolio management agent on Mantle. AI vs humans, settled on-chain.",
   },
+  // Virtual Protocol site verification. Renders as
+  // <meta name="virtual-protocol-site-verification" content="..." />
+  verification: {
+    other: {
+      "virtual-protocol-site-verification": "57803b18eb7f531853874d76ef5ce811",
+    },
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
